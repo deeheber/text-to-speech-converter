@@ -1,4 +1,5 @@
 exports.handler = async message => {
+  // TODO: Add permission to polly:SynthesizeSpeech
   /*
     Get the file information from the Table
     Divide the file text into sections of 1000 characters (store in an array)
