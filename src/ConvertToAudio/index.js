@@ -6,7 +6,7 @@ exports.handler = async message => {
       Send to synthesize the speech in Polly with output format of mp3
       Save the synthesized speech to /tmp/fileId
     Upload the /tmp/fileId to the FileStore bucket
-    Update the item in dynamoDB Table to have the URL to the file in S3
+    Update the item in dynamoDB Table to have the URL to the file in S3 and the status to COMPLETE
   */
   console.log(message);
 
