@@ -6,25 +6,33 @@ exports.handler = async message => {
   console.log(`CreateNewFile invoked  with  message: ${message}`);
 
   const id = uuid();
+  const data = JSON.parse(message.body);
 
   const params = {
     TableName: process.env.TABLE_NAME,
     Item: {
       id,
-      text: JSON.parse(message.text),
-      voice: JSON.parse(message.voice),
+      text: data.text,
+      voice: data.voice,
       status: 'PROCESSING'
     }
   };
 
   console.log(`Adding file metadata to table ${process.env.TABLE_NAME}`);
-  await dynamodb.put(params).promise();
+
+  try {
+    await dynamodb.put(params).promise();
+  } catch (err) {
+    console.log(`An error occurred: ${err.message}`);
+  }
+
   console.log(`Metadata added to table, done`);
 
   const lambda = new AWS.Lambda();
+  const payload = JSON.stringify({ id });
 
   lambda.invoke({
     FunctionName: process.env.FUNCTION_NAME,
-    Payload: JSON.stringify({ id })
+    Payload: payload
   });
 };
