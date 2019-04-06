@@ -23,7 +23,7 @@ exports.handler = async message => {
   try {
     await dynamodb.put(params).promise();
   } catch (err) {
-    console.log(`An error occurred: ${err.message}`);
+    console.log(`An error occurred adding to the table: ${err.message}`);
   }
 
   console.log(`Metadata added to table, done`);
@@ -31,8 +31,19 @@ exports.handler = async message => {
   const lambda = new AWS.Lambda();
   const payload = JSON.stringify({ id });
 
-  lambda.invoke({
-    FunctionName: process.env.FUNCTION_NAME,
-    Payload: payload
-  });
+  try {
+    await lambda.invoke({
+      FunctionName: process.env.FUNCTION_NAME,
+      InvocationType: 'Event',
+      Payload: payload
+    });
+  } catch (err) {
+    console.log(`An error occurred when invoking the second function: ${err.message}`);
+  }
+
+  return {
+    statusCode: 200,
+    headers: {},
+    body: 'File processing.'
+  };
 };
