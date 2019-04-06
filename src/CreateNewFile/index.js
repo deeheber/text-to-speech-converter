@@ -3,7 +3,7 @@ const AWS = require('aws-sdk');
 const dynamodb = new AWS.DynamoDB.DocumentClient();
 
 exports.handler = async message => {
-  console.log(`CreateNewFile invoked  with  message: ${message}`);
+  console.log(`CreateNewFile invoked  with  message: ${JSON.stringify(message, null, 2)}`);
 
   const id = uuid();
   const data = JSON.parse(message.body);
@@ -36,7 +36,7 @@ exports.handler = async message => {
       FunctionName: process.env.FUNCTION_NAME,
       InvocationType: 'Event',
       Payload: payload
-    });
+    }).promise();
   } catch (err) {
     console.log(`An error occurred when invoking the second function: ${err.message}`);
   }

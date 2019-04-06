@@ -9,7 +9,7 @@ exports.handler = async message => {
     Upload the /tmp/fileId to the FileStore bucket
     Update the item in dynamoDB Table to have the URL to the file in S3 and the status to COMPLETE
   */
-  console.log(message);
+  console.log(`ConvertToAudio invoked with message: ${JSON.stringify(message, null, 2)}`);
 
   return {};
 }
