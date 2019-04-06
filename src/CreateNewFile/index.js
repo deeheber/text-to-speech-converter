@@ -22,13 +22,14 @@ exports.handler = async message => {
 
   console.log(`Adding file metadata to table ${process.env.TABLE_NAME}`);
 
+  let dynamoResponse;
+
   try {
-    await dynamodb.put(params).promise();
+    dynamoResponse = await dynamodb.put(params).promise();
+    console.log('Dynamo response ', dynamoResponse);
   } catch (err) {
     console.log('An error occurred adding to the table: ', err);
   }
-
-  console.log(`File metadata added to table, DONE`);
 
   const lambda = new AWS.Lambda();
   let response;
@@ -40,9 +41,9 @@ exports.handler = async message => {
       Payload: JSON.stringify({ id, voice, text })
     }).promise();
 
-    console.log('Invoke response: ', response);
+    console.log('ConvertToAudio function invoke response: ', response);
   } catch (err) {
-    console.log('An error occurred when invoking the second function: ', err);
+    console.log('An error occurred when invoking ConvertToAudio function: ', err);
   }
 
   // TODO: customize reply for a non happy path response
