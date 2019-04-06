@@ -13,6 +13,8 @@ This is an application that takes in text and outputs an audio file of that text
   - Polly
 - [Node](https://nodejs.org/en/)
 
+![Setup](https://user-images.githubusercontent.com/12616554/55670972-6445f100-583f-11e9-9e4e-4c62a7422884.png)
+
 ### Directions To Run
 1. Fork this repo
 2. Login to Stackery > create a new stack > Use existing repo > Plug in the url for your forked version of the code
