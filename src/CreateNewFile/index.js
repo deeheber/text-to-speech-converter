@@ -22,11 +22,9 @@ exports.handler = async message => {
 
   console.log(`Adding file metadata to table ${process.env.TABLE_NAME}`);
 
-  let dynamoResponse;
-
   try {
-    dynamoResponse = await dynamodb.put(params).promise();
-    console.log('Dynamo response ', dynamoResponse);
+    await dynamodb.put(params).promise();
+    console.log('Item successfully added to the table  ', params);
   } catch (err) {
     console.log('An error occurred adding to the table: ', err);
   }
@@ -46,6 +44,5 @@ exports.handler = async message => {
     console.log('An error occurred when invoking ConvertToAudio function: ', err);
   }
 
-  // TODO: customize reply for a non happy path response
   return JSON.parse(response.Payload);
 };
