@@ -32,7 +32,7 @@ exports.handler = async message => {
   const lambda = new AWS.Lambda();
 
   try {
-    await lambda.invoke({
+    return await lambda.invoke({
       FunctionName: process.env.FUNCTION_NAME,
       InvocationType: 'RequestResponse',
       Payload: JSON.stringify({ id, voice, text })
@@ -40,10 +40,4 @@ exports.handler = async message => {
   } catch (err) {
     console.log(`An error occurred when invoking the second function: ${err.message}`);
   }
-
-  return {
-    statusCode: 200,
-    headers: {},
-    body: 'File processing.'
-  };
 };
