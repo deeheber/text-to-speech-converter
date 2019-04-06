@@ -3,6 +3,7 @@ const dynamodb = new AWS.DynamoDB.DocumentClient();
 
 exports.handler = async message => {
   console.log(`Get file invoked with message: ${JSON.stringify(message, null, 2)}`);
+  console.log(message);
 
   const queryStringParameters = JSON.parse(message.queryStringParameters);
   let id = false;

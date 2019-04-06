@@ -30,9 +30,10 @@ exports.handler = async message => {
 
   console.log(`Metadata added to table, done`);
   const lambda = new AWS.Lambda();
+  let response;
 
   try {
-    const response = await lambda.invoke({
+    response = await lambda.invoke({
       FunctionName: process.env.FUNCTION_NAME,
       InvocationType: 'RequestResponse',
       Payload: JSON.stringify({ id, voice, text })
@@ -42,4 +43,6 @@ exports.handler = async message => {
   } catch (err) {
     console.log(`An error occurred when invoking the second function: ${err.message}`);
   }
+
+  return response.Payload;
 };
