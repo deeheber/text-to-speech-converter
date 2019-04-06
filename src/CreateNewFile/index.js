@@ -7,13 +7,15 @@ exports.handler = async message => {
 
   const id = uuid();
   const data = JSON.parse(message.body);
+  const text = data.text;
+  const voice = data.voice || 'Matthew';
 
   const params = {
     TableName: process.env.TABLE_NAME,
     Item: {
       id,
-      text: data.text,
-      voice: data.voice,
+      text,
+      voice,
       status: 'PROCESSING'
     }
   };
@@ -27,15 +29,13 @@ exports.handler = async message => {
   }
 
   console.log(`Metadata added to table, done`);
-
   const lambda = new AWS.Lambda();
-  const payload = JSON.stringify({ id });
 
   try {
     await lambda.invoke({
       FunctionName: process.env.FUNCTION_NAME,
-      InvocationType: 'Event',
-      Payload: payload
+      InvocationType: 'RequestResponse',
+      Payload: JSON.stringify({ id, voice, text })
     }).promise();
   } catch (err) {
     console.log(`An error occurred when invoking the second function: ${err.message}`);

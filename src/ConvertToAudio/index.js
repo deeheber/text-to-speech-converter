@@ -11,5 +11,9 @@ exports.handler = async message => {
   */
   console.log(`ConvertToAudio invoked with message: ${JSON.stringify(message, null, 2)}`);
 
-  return {};
-}
+  return {
+    statusCode: 200,
+    headers: {},
+    body: 'File processing complete.'
+  };
+};
