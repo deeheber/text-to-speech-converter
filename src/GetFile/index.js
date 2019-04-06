@@ -15,7 +15,7 @@ exports.handler = async message => {
     };
 
     try {
-      response = await dynamodb.query(params).promise();
+      response = await dynamodb.get(params).promise();
       statusCode = 200;
     } catch (err) {
       console.log('An error occurred pulling from the table: ', err);
