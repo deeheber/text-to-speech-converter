@@ -25,15 +25,10 @@ This is an application that takes in text and outputs an audio file of that text
 
 ### Known Limitations
 - The maximum item size in DynamoDB is 400 KB (includes all keys/values), so this can't be an entire book of text...might consider using a different type of data store in the future if processing books of text are needed.
+- Written with US-English in mind, so it might not convert as expected for other languages.
 
 ### Outstanding TODO Items
-- [ ] Add Polly permission to `ConvertToAudio` function
-- [ ] Write function code
-- [ ] More granular permissions on functions, the table, and S3 buckets
-- [ ] Write frontend code
-- [ ] Lockdown the API gateway calls to just be invoked from the Frontend S3 bucket
-- [ ] Might need to enable cors on either the API gateway and/or on the bucket(s) (unsure)
-- [ ] Add directions on how to upload the frontend code to S3 to this README
+See [open issues](https://github.com/deeheber/text-to-speech-converter/issues)
 
 ### Logging Issues
 If you find a bug or have a question, feel free to open a new issue and our maintainers will reply as soon as they possibly can. Please describe the issue including steps to reproduce if there are any.
