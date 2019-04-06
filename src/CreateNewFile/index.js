@@ -32,11 +32,13 @@ exports.handler = async message => {
   const lambda = new AWS.Lambda();
 
   try {
-    return await lambda.invoke({
+    const response = await lambda.invoke({
       FunctionName: process.env.FUNCTION_NAME,
       InvocationType: 'RequestResponse',
       Payload: JSON.stringify({ id, voice, text })
     }).promise();
+
+    console.log(`invoke response: ${JSON.stringify(response, null, 2)}`);
   } catch (err) {
     console.log(`An error occurred when invoking the second function: ${err.message}`);
   }

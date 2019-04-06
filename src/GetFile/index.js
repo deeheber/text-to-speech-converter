@@ -7,7 +7,7 @@ exports.handler = async message => {
   const queryStringParameters = JSON.parse(message.queryStringParameters);
   let id = false;
 
-  if ('id' in queryStringParameters) {
+  if (queryStringParameters && 'id' in queryStringParameters) {
     id = message.queryStringParameters.id;
   }
 
