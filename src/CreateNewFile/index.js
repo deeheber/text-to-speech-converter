@@ -45,5 +45,6 @@ exports.handler = async message => {
     console.log('An error occurred when invoking the second function: ', err);
   }
 
-  return response.Payload;
+  // TODO: customize reply for a non happy path response
+  return JSON.parse(response.Payload);
 };
