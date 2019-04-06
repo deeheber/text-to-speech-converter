@@ -2,10 +2,9 @@ const AWS = require('aws-sdk');
 const dynamodb = new AWS.DynamoDB.DocumentClient();
 
 exports.handler = async message => {
-  console.log(`Get file invoked with message: ${JSON.stringify(message, null, 2)}`);
-  console.log(message);
+  console.log('Get file invoked with message: ', message);
 
-  const queryStringParameters = JSON.parse(message.queryStringParameters);
+  const queryStringParameters = message.queryStringParameters;
   let id = false;
 
   if (queryStringParameters && 'id' in queryStringParameters) {
@@ -24,7 +23,7 @@ exports.handler = async message => {
     try {
       response = await dynamodb.query(params).promise();
     } catch (err) {
-      console.log(`An error occurred pulling from the table: ${err.message}`);
+      console.log('An error occurred pulling from the table: ', err);
     }
   } else {
     let params = {
@@ -35,7 +34,7 @@ exports.handler = async message => {
     try {
       response = await dynamodb.scan(params).promise();
     } catch (err) {
-      console.log(`An error occurred scanning the table: ${err.message}`);
+      console.log('An error occurred scanning the table: ', err);
     }
   }
 

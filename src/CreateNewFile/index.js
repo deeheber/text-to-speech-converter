@@ -3,7 +3,7 @@ const AWS = require('aws-sdk');
 const dynamodb = new AWS.DynamoDB.DocumentClient();
 
 exports.handler = async message => {
-  console.log(`CreateNewFile invoked  with  message: ${JSON.stringify(message, null, 2)}`);
+  console.log('CreateNewFile invoked  with  message: ', message);
 
   const id = uuid();
   const data = JSON.parse(message.body);
@@ -25,10 +25,11 @@ exports.handler = async message => {
   try {
     await dynamodb.put(params).promise();
   } catch (err) {
-    console.log(`An error occurred adding to the table: ${err.message}`);
+    console.log('An error occurred adding to the table: ', err);
   }
 
-  console.log(`Metadata added to table, done`);
+  console.log(`File metadata added to table, DONE`);
+
   const lambda = new AWS.Lambda();
   let response;
 
@@ -39,9 +40,9 @@ exports.handler = async message => {
       Payload: JSON.stringify({ id, voice, text })
     }).promise();
 
-    console.log(`invoke response: ${JSON.stringify(response, null, 2)}`);
+    console.log('Invoke response: ', response);
   } catch (err) {
-    console.log(`An error occurred when invoking the second function: ${err.message}`);
+    console.log('An error occurred when invoking the second function: ', err);
   }
 
   return response.Payload;
