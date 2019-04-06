@@ -1,4 +1,4 @@
-# text-to-speech-converter
+# text-to-speech-converter (WIP and not complete yet)
 
 ## Summary
 This is an application that takes in text and outputs an audio file of that text.
@@ -17,8 +17,10 @@ This is an application that takes in text and outputs an audio file of that text
 1. Fork this repo
 2. Login to Stackery > create a new stack > Use existing repo > Plug in the url for your forked version of the code
 3. Deploy the stack (will need to add an evironment first if you haven't prior)
-4. [Invoke the URLs from API Gateway](https://docs.aws.amazon.com/apigateway/latest/developerguide/how-to-call-api.html)
-(Polly isn't supported by CloudFormation...might need to login to create something via the console, but doubtful...leaving this here as a note to myself)
+4. [Invoke the URLs from API Gateway](https://docs.aws.amazon.com/apigateway/latest/developerguide/how-to-call-api.html)...could also use something like [Postman](https://www.getpostman.com/) if you prefer.
+
+### Known Limitations
+- The maximum item size in DynamoDB is 400 KB (includes all keys/values), so this can't be an entire book of text...might consider using a different type of data store in the future if processing books of text are needed.
 
 ### Outstanding TODO Items
 - [ ] Add Polly permission to `ConvertToAudio` function
