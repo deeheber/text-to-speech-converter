@@ -44,5 +44,6 @@ exports.handler = async message => {
     console.log('An error occurred when invoking ConvertToAudio function: ', err);
   }
 
+  //  TODO adjust  this to account  for non happy path scenario
   return JSON.parse(response.Payload);
 };

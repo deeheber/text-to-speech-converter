@@ -9,13 +9,13 @@ exports.handler = async message => {
 
   // determine if we're getting a single  file or returning all of them
   if (message.queryStringParameters !== null && 'id' in message.queryStringParameters) {
-    let params = {
+    const listParams = {
       TableName: process.env.TABLE_NAME,
       Key: { id: message.queryStringParameters.id }
     };
 
     try {
-      response = await dynamodb.get(params).promise();
+      response = await dynamodb.get(listParams).promise();
       statusCode = 200;
     } catch (err) {
       console.log('An error occurred pulling from the table: ', err);
@@ -23,13 +23,13 @@ exports.handler = async message => {
       statusCode = err.statusCode;
     }
   } else {
-    let params = {
+    const getParams = {
       TableName: process.env.TABLE_NAME,
       Select: 'ALL_ATTRIBUTES'
     };
 
     try {
-      response = await dynamodb.scan(params).promise();
+      response = await dynamodb.scan(getParams).promise();
       statusCode = 200;
     } catch (err) {
       console.log('An error occurred scanning the table: ', err);
