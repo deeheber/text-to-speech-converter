@@ -97,6 +97,12 @@ Resources:
             BucketName: !Ref FileStore
         - DynamoDBCrudPolicy:
             TableName: !Ref Table
+        - Version: 2012-10-17
+          Statement:
+            - Effect: Allow
+              Resource: '*'
+              Action:
+                - polly:SynthesizeSpeech
       Environment:
         Variables:
           BUCKET_NAME: !Ref FileStore
