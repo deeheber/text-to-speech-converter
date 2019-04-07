@@ -11,6 +11,7 @@ exports.handler = async message => {
   const voice = data.voice || 'Matthew';
 
   const params = {
+    TableName: process.env.TABLE_NAME,
     Item: {
       id,
       text,
@@ -26,8 +27,9 @@ exports.handler = async message => {
     console.log('Item successfully added to the table  ', params);
   } catch (err) {
     console.log('An error occurred adding to the table: ', err);
+    // Pretty unlikely, but stop the program and return an error if there's a dynamo issue
     return {
-      statusCode: err.statusCode,
+      statusCode: 500,
       headers: {},
       body: JSON.stringify(err.message)
     };
@@ -37,17 +39,22 @@ exports.handler = async message => {
   let response;
 
   try {
-    response = await lambda.invoke({
+    const lambdaResponse = await lambda.invoke({
       FunctionName: process.env.FUNCTION_NAME,
       InvocationType: 'RequestResponse',
       Payload: JSON.stringify({ id, voice, text })
     }).promise();
 
     console.log('ConvertToAudio function invoke response: ', response);
+    response = JSON.parse(lambdaResponse.Payload);
   } catch (err) {
     console.log('An error occurred when invoking ConvertToAudio function: ', err);
+    response = {
+      statusCode: 500,
+      headers: {},
+      body: JSON.stringify(err.message)
+    };
   }
 
-  //  TODO adjust  this to account  for non happy path scenario
-  return JSON.parse(response.Payload);
+  return response;
 };
