@@ -11,7 +11,6 @@ exports.handler = async message => {
   const voice = data.voice || 'Matthew';
 
   const params = {
-    TableName: process.env.TABLE_NAME,
     Item: {
       id,
       text,
@@ -27,6 +26,11 @@ exports.handler = async message => {
     console.log('Item successfully added to the table  ', params);
   } catch (err) {
     console.log('An error occurred adding to the table: ', err);
+    return {
+      statusCode: err.statusCode,
+      headers: {},
+      body: JSON.stringify(err.message)
+    };
   }
 
   const lambda = new AWS.Lambda();
