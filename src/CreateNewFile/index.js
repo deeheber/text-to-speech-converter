@@ -40,7 +40,7 @@ exports.handler = async message => {
 
   try {
     const lambdaResponse = await lambda.invoke({
-      FunctionName: process.env.FUNCTION_NAME,
+      // FunctionName: process.env.FUNCTION_NAME,
       InvocationType: 'RequestResponse',
       Payload: JSON.stringify({ id, voice, text })
     }).promise();
