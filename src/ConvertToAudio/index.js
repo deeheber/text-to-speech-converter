@@ -39,13 +39,12 @@ exports.handler = async (message, context) => {
           return console.log('Error occured while putting s3 object: ', err);
         }
         console.log('Object successfully put in s3: ', data);
+        return {
+          statusCode: 200,
+          headers: {},
+          body: 'File processing complete.'
+        };
       });
     });
   });
-
-  return {
-    statusCode: 200,
-    headers: {},
-    body: 'File processing complete.'
-  };
 };
