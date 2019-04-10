@@ -1,11 +1,14 @@
-const fs = require('fs');
 const AWS = require('aws-sdk');
 const s3 = new AWS.S3();
+const fs = require('fs');
+const promisify = require('util').promisify;
+const writeFilePromise = promisify(fs.writeFile);
+// const AWS = require('aws-sdk');
+// const s3 = new AWS.S3();
 
-exports.handler = async (message, context) => {
-  // TODO: Add permission to polly:SynthesizeSpeech
+exports.handler = async message => {
   /*
-    Get the file information from the Table
+    Get the file information from the message
     Divide the file text into sections of 1000 characters (store in an array)
     Loop through the array for each item
       Send to synthesize the speech in Polly with output format of mp3
@@ -14,37 +17,24 @@ exports.handler = async (message, context) => {
     Update the item in dynamoDB Table to have the URL to the file in S3 and the status to COMPLETE
   */
   console.log(`ConvertToAudio invoked with message: ${JSON.stringify(message, null, 2)}`);
-  console.log('ConvertToAudio context: ', context);
 
-  fs.writeFile('./tmp/test.txt', 'This is only a test file', (err) => {
-    if (err) {
-      return console.log('Error writing file to tmp: ', err);
-    }
+  try {
+    const writeFile = await writeFilePromise('/tmp/test.txt', 'This is a test  file');
 
-    console.log('writing file succeess');
+    console.log('SUCCESS writing file: ', writeFile);
 
-    fs.readFile('./tmp/test.txt', (err, fileBuffer) => {
-      if (err) {
-        return console.log('An error ocurred uploading to  s3: ', err);
-      }
+    const uploadToS3 = await s3.putObject({
+      ACL: 'public-read',
+      Bucket: process.env.BUCKET_NAME,
+      Key: 'test.txt',
+      Body: fs.createReadStream('/tmp/test.txt'),
+      ContentType: 'application/zip'
+    }).promise();
 
-      const params = {
-        Body: fileBuffer,
-        Bucket: process.env.BUCKET_NAME,
-        Key: 'test.txt'
-      };
+    console.log('SUCCESS uploading to S3: ', uploadToS3);
+  } catch (err) {
+    console.log('ERROR: ', err);
+  }
 
-      s3.putObject(params, (err, data) => {
-        if (err) {
-          return console.log('Error occured while putting s3 object: ', err);
-        }
-        console.log('Object successfully put in s3: ', data);
-        return {
-          statusCode: 200,
-          headers: {},
-          body: 'File processing complete.'
-        };
-      });
-    });
-  });
+  // url example https://s3.amazonaws.com/text-to-speech-converter-personal-filestore/test.txt
 };
