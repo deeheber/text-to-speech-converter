@@ -16,14 +16,14 @@ exports.handler = async (message, context) => {
   console.log(`ConvertToAudio invoked with message: ${JSON.stringify(message, null, 2)}`);
   console.log('ConvertToAudio context: ', context);
 
-  fs.writeFile('/tmp/test.txt', 'This is only a test file', (err) => {
+  fs.writeFile('./tmp/test.txt', 'This is only a test file', (err) => {
     if (err) {
       return console.log('Error writing file to tmp: ', err);
     }
 
     console.log('writing file succeess');
 
-    fs.readFile('/tmp/test.txt', (err, fileBuffer) => {
+    fs.readFile('./tmp/test.txt', (err, fileBuffer) => {
       if (err) {
         return console.log('An error ocurred uploading to  s3: ', err);
       }
