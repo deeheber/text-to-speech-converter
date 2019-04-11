@@ -28,7 +28,7 @@ exports.handler = async message => {
     const uploadToS3 = await s3.putObject({
       ACL: 'public-read',
       Bucket: process.env.BUCKET_NAME,
-      Key: 'test.txt',
+      Key: `${message.id}.txt`,
       Body: fs.createReadStream(`/tmp/${message.id}.txt`),
       ContentType: 'application/zip'
     }).promise();
