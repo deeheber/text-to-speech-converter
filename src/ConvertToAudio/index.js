@@ -18,8 +18,10 @@ exports.handler = async message => {
   */
   console.log(`ConvertToAudio invoked with message: ${JSON.stringify(message, null, 2)}`);
 
+  let response;
+
   try {
-    const writeFile = await writeFilePromise('/tmp/test.txt', 'This is a test  file');
+    const writeFile = await writeFilePromise(`/tmp/${message.id}.txt`, `${message.text}`);
 
     console.log('SUCCESS writing file: ', writeFile);
 
@@ -27,14 +29,26 @@ exports.handler = async message => {
       ACL: 'public-read',
       Bucket: process.env.BUCKET_NAME,
       Key: 'test.txt',
-      Body: fs.createReadStream('/tmp/test.txt'),
+      Body: fs.createReadStream(`/tmp/${message.id}.txt`),
       ContentType: 'application/zip'
     }).promise();
 
     console.log('SUCCESS uploading to S3: ', uploadToS3);
+
+    response = {
+      statusCode: 200,
+      headers: {},
+      body: `https://s3.amazonaws.com/${process.env.BUCKET_NAME}/${message.id}.txt`
+    };
   } catch (err) {
     console.log('ERROR: ', err);
+
+    response = {
+      statusCode: 500,
+      headers: {},
+      body: JSON.stringify(err.message)
+    };
   }
 
-  // url example https://s3.amazonaws.com/text-to-speech-converter-personal-filestore/test.txt
+  return response;
 };
