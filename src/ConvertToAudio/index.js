@@ -1,5 +1,6 @@
 const AWS = require('aws-sdk');
 const s3 = new AWS.S3();
+const dynamodb = new AWS.DynamoDB.DocumentClient();
 const fs = require('fs');
 const promisify = require('util').promisify;
 const writeFilePromise = promisify(fs.writeFile);
@@ -34,6 +35,16 @@ exports.handler = async message => {
     }).promise();
 
     console.log('SUCCESS uploading to S3: ', uploadToS3);
+
+    const updateDynamo = await dynamodb.put({
+      TableName: process.env.TABLE_NAME,
+      Item: {
+        url: `https://s3.amazonaws.com/${process.env.BUCKET_NAME}/${message.id}.txt`,
+        status: 'COMPLETE'
+      }
+    });
+
+    console.log('SUCCESS adding url to  DynamoDB: ', updateDynamo);
 
     response = {
       statusCode: 200,
