@@ -39,10 +39,13 @@ exports.handler = async message => {
     const updateDynamo = await dynamodb.update({
       TableName: process.env.TABLE_NAME,
       Key: { id: message.id },
-      UpdateExpression: 'SET status = :status, url = :url',
+      UpdateExpression: 'SET #file_status = :file_status, url = :url',
       ExpressionAttributeValues: {
-        ':status': 'COMPLETE',
+        ':file_status': 'COMPLETE',
         ':url': `https://s3.amazonaws.com/${process.env.BUCKET_NAME}/${message.id}.txt`
+      },
+      ExpressionAttributeNames: {
+        '#file_status': 'status'
       },
       ReturnValues: 'ALL_NEW'
     }).promise();
