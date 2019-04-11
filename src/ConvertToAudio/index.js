@@ -36,20 +36,23 @@ exports.handler = async message => {
 
     console.log('SUCCESS uploading to S3: ', uploadToS3);
 
-    const updateDynamo = await dynamodb.put({
+    const updateDynamo = await dynamodb.update({
       TableName: process.env.TABLE_NAME,
-      Item: {
-        url: `https://s3.amazonaws.com/${process.env.BUCKET_NAME}/${message.id}.txt`,
-        status: 'COMPLETE'
-      }
-    });
+      Key: { id: message.id },
+      UpdateExpression: 'SET status = :status, url = :url',
+      ExpressionAttributeValues: {
+        ':status': 'COMPLETE',
+        ':url': `https://s3.amazonaws.com/${process.env.BUCKET_NAME}/${message.id}.txt`
+      },
+      ReturnValues: 'ALL_NEW'
+    }).promise();
 
     console.log('SUCCESS adding url to  DynamoDB: ', updateDynamo);
 
     response = {
       statusCode: 200,
       headers: {},
-      body: `https://s3.amazonaws.com/${process.env.BUCKET_NAME}/${message.id}.txt`
+      body: JSON.stringify(updateDynamo.Attributes)
     };
   } catch (err) {
     console.log('ERROR: ', err);
