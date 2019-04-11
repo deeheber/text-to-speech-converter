@@ -7,15 +7,12 @@ const promisify = require('util').promisify;
 const writeFilePromise = promisify(fs.writeFile);
 
 exports.handler = async message => {
-  /*
-    Get the file information from the message
-    Divide the file text into sections of 1000 characters (store in an array)
-    Loop through the array for each item
-      Send to synthesize the speech in Polly with output format of mp3
-      Save the synthesized speech to /tmp/fileId
-    Upload the /tmp/fileId.mp3 to the FileStore bucket
-    Update the item in dynamoDB Table to have the URL to the file in S3 and the status to COMPLETE
-  */
+  // TODO
+  // Set this up to split message.text into pieces of 1000 characters due to polly
+  // synthesizeSpeech limits.
+  // Iterate over all items and for each item
+  //   Call polly synthesizeSpeech
+  //   Append the AudioStream to the file in /tmp (might need to use writeFileStream instead)
   console.log(`ConvertToAudio invoked with message: ${JSON.stringify(message, null, 2)}`);
 
   let response;

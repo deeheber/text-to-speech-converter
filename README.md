@@ -1,4 +1,4 @@
-# text-to-speech-converter (WIP and not complete yet)
+# text-to-speech-converter
 
 ## Summary
 This is an application that takes in text and outputs an audio file of that text.
