@@ -5,20 +5,24 @@ const dynamodb = new AWS.DynamoDB.DocumentClient();
 const fs = require('fs');
 const promisify = require('util').promisify;
 const writeFilePromise = promisify(fs.writeFile);
+const { chunkText } = require('utils');
 
 exports.handler = async message => {
-  // TODO
-  // Set this up to split message.text into pieces of 1000 characters due to polly
-  // synthesizeSpeech limits.
-  // 3000 billed characters (6000 total) https://docs.aws.amazon.com/polly/latest/dg/limits.html
-  // Iterate over all items and for each item
-  //   Call polly synthesizeSpeech
-  //   Append the AudioStream to the file in /tmp (might need to use writeFileStream instead)
   console.log(`ConvertToAudio invoked with message: ${JSON.stringify(message, null, 2)}`);
 
   let response;
 
   try {
+    // Chunk the text in groups of 10+ characters (will be 2500 when doing this for real)
+    // Each chunk
+    //  call polly.synthesizeSpeech
+    //  append the result to /tmp
+    // Upload the /tmp file to s3
+    // Update Dynamo table's status and s3 URL
+    // Return the result
+
+    // const textChunks = chunkText(message.text);
+
     const pollyFile = await polly.synthesizeSpeech({
       OutputFormat: 'mp3',
       Text: `${message.text}`,
