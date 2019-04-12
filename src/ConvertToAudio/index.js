@@ -10,6 +10,7 @@ exports.handler = async message => {
   // TODO
   // Set this up to split message.text into pieces of 1000 characters due to polly
   // synthesizeSpeech limits.
+  // 3000 billed characters (6000 total) https://docs.aws.amazon.com/polly/latest/dg/limits.html
   // Iterate over all items and for each item
   //   Call polly synthesizeSpeech
   //   Append the AudioStream to the file in /tmp (might need to use writeFileStream instead)
