@@ -55,8 +55,13 @@ Resources:
       Tracing: Active
       Policies:
         - AWSXrayWriteOnlyAccess
-        - DynamoDBCrudPolicy:
-            TableName: !Ref Table
+        - Version: 2012-10-17
+          Statement:
+            - Effect: Allow
+              Resource: !GetAtt Table.Arn
+              Action:
+                - dynamodb:GetItem
+                - dynamodb:Scan
       Events:
         ApiGETfile:
           Type: Api
@@ -93,10 +98,19 @@ Resources:
       Tracing: Active
       Policies:
         - AWSXrayWriteOnlyAccess
-        - S3CrudPolicy:
-            BucketName: !Ref FileStore
-        - DynamoDBCrudPolicy:
-            TableName: !Ref Table
+        - Version: 2012-10-17
+          Statement:
+            - Effect: Allow
+              Resource: !Join [ '', [ !GetAtt FileStore.Arn, /* ] ]
+              Action:
+                - s3:PutObject
+                - s3:PutObjectAcl
+        - Version: 2012-10-17
+          Statement:
+            - Effect: Allow
+              Resource: !GetAtt Table.Arn
+              Action:
+                - dynamodb:UpdateItem
         - Version: 2012-10-17
           Statement:
             - Effect: Allow
@@ -124,8 +138,12 @@ Resources:
       Tracing: Active
       Policies:
         - AWSXrayWriteOnlyAccess
-        - DynamoDBCrudPolicy:
-            TableName: !Ref Table
+        - Version: 2012-10-17
+          Statement:
+            - Effect: Allow
+              Resource: !GetAtt Table.Arn
+              Action:
+                - dynamodb:PutItem
         - LambdaInvokePolicy:
             FunctionName: !Ref ConvertToAudio
       Events:

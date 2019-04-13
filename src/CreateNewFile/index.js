@@ -29,7 +29,7 @@ exports.handler = async message => {
     console.log('An error occurred adding to the table: ', err);
     // Pretty unlikely, but stop the program and return an error if there's a dynamo issue
     return {
-      statusCode: 500,
+      statusCode: err.StatusCode || 500,
       headers: {},
       body: JSON.stringify(err.message)
     };
@@ -50,7 +50,7 @@ exports.handler = async message => {
   } catch (err) {
     console.log('An error occurred when invoking ConvertToAudio function: ', err);
     response = {
-      statusCode: 500,
+      statusCode: err.StatusCode || 500,
       headers: {},
       body: JSON.stringify(err.message)
     };

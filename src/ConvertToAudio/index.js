@@ -71,7 +71,7 @@ exports.handler = async message => {
     console.log('ERROR: ', err);
 
     response = {
-      statusCode: 500,
+      statusCode: err.statusCode || 500,
       headers: {},
       body: JSON.stringify(err.message)
     };
