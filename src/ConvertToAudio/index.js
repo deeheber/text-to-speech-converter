@@ -13,6 +13,7 @@ exports.handler = async message => {
   // Process text in chunks of 2500 characters
   // This is due to the polly limits for synthesizeSpeech
   // As of 04/13/2019 that limit is 3000 characters
+  // https://docs.aws.amazon.com/polly/latest/dg/limits.html
   const textChunks = chunkText(message.text);
   let response;
 
