@@ -23,7 +23,7 @@ This is an application that takes in text and outputs an audio file of that text
 3. Deploy the stack (will need to add an evironment first if you haven't prior)
 4. [Invoke the URLs from API Gateway](https://docs.aws.amazon.com/apigateway/latest/developerguide/how-to-call-api.html)...could also use something like [Postman](https://www.getpostman.com/) if you prefer.
 
-### Known Limitations
+### Known Limitations For Larger Requests
 - There's a [maximum item size](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Limits.html#limits-items) in DynamoDB (includes all keys/values), so this can't go beyond that. [Issue here](https://github.com/deeheber/text-to-speech-converter/issues/11)
 - Lambda has [limits](https://docs.aws.amazon.com/lambda/latest/dg/limits.html) for the invocation payload and `/tmp` directory storage. [Issue here](https://github.com/deeheber/text-to-speech-converter/issues/12)
 - Written with US-English in mind, so it might not convert as expected for other languages.
