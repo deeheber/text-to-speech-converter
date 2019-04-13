@@ -104,6 +104,7 @@ Resources:
               Resource: !Join [ '', [ !GetAtt FileStore.Arn, /* ] ]
               Action:
                 - s3:PutObject
+                - s3:PutObjectAcl
         - Version: 2012-10-17
           Statement:
             - Effect: Allow
