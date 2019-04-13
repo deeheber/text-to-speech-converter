@@ -19,7 +19,7 @@ module.exports = function chunkText (originalText) {
       // We're in the middle of a word, so work forward to find the new end
       // that isn't a letter, number, -, or '
       // will cause the chunk to be a tad longere than the intended chunkLength
-      let newEnd = end - 1;
+      let newEnd = end + 1;
       let newNextChar = originalText[newEnd];
 
       while (newNextChar.match(/[\w'-]/)) {
