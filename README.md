@@ -24,10 +24,11 @@ This is an application that takes in text and outputs an audio file of that text
 4. [Invoke the URLs from API Gateway](https://docs.aws.amazon.com/apigateway/latest/developerguide/how-to-call-api.html)...could also use something like [Postman](https://www.getpostman.com/) if you prefer.
 
 ### Known Limitations
-- The maximum item size in DynamoDB is 400 KB (includes all keys/values), so this can't be an entire book of text...might consider using a different type of data store in the future if processing books of text are needed.
+- There's a [maximum item size](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Limits.html#limits-items) in DynamoDB (includes all keys/values), so this can't go beyond that. [Issue here](https://github.com/deeheber/text-to-speech-converter/issues/11)
+- Lambda has [limits](https://docs.aws.amazon.com/lambda/latest/dg/limits.html) for the invocation payload and `/tmp` directory storage. [Issue here](https://github.com/deeheber/text-to-speech-converter/issues/12)
 - Written with US-English in mind, so it might not convert as expected for other languages.
 
-### Outstanding TODO Items
+### Outstanding TODO Items / Open Bugs
 See [open issues](https://github.com/deeheber/text-to-speech-converter/issues)
 
 ### Logging Issues
