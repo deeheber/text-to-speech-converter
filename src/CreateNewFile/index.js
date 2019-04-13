@@ -50,7 +50,7 @@ exports.handler = async message => {
   } catch (err) {
     console.log('An error occurred when invoking ConvertToAudio function: ', err);
     response = {
-      statusCode: 500,
+      statusCode: err.StatusCode || 500,
       headers: {},
       body: JSON.stringify(err.message)
     };
