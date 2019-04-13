@@ -1,6 +1,6 @@
 module.exports = function chunkText (originalText) {
   // will make this 2500 when doing this for real
-  const chunkLength = 10;
+  const chunkLength = 100;
   const textBlocks = [];
   let start = 0;
   let end = chunkLength;
