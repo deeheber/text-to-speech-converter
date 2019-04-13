@@ -5,31 +5,36 @@ const dynamodb = new AWS.DynamoDB.DocumentClient();
 const fs = require('fs');
 const promisify = require('util').promisify;
 const writeFilePromise = promisify(fs.writeFile);
+const { chunkText } = require('utils');
 
 exports.handler = async message => {
-  // TODO
-  // Set this up to split message.text into pieces of 1000 characters due to polly
-  // synthesizeSpeech limits.
-  // Iterate over all items and for each item
-  //   Call polly synthesizeSpeech
-  //   Append the AudioStream to the file in /tmp (might need to use writeFileStream instead)
   console.log(`ConvertToAudio invoked with message: ${JSON.stringify(message, null, 2)}`);
 
+  // Process text in chunks of 2500 characters
+  // This is due to the polly limits for synthesizeSpeech
+  // As of 04/13/2019 that limit is 3000 characters
+  // https://docs.aws.amazon.com/polly/latest/dg/limits.html
+  const textChunks = chunkText(message.text);
   let response;
 
   try {
-    const pollyFile = await polly.synthesizeSpeech({
-      OutputFormat: 'mp3',
-      Text: `${message.text}`,
-      TextType: 'text',
-      VoiceId: `${message.voice}`
-    }).promise();
+    for (let i = 0; i < textChunks.length; i++) {
+      const pollyFile = await polly.synthesizeSpeech({
+        OutputFormat: 'mp3',
+        Text: `${textChunks[i]}`,
+        TextType: 'text',
+        VoiceId: `${message.voice}`
+      }).promise();
 
-    console.log('SUCCESS converting text to audio file: ', pollyFile);
+      console.log('SUCCESS converting text chunk to audio: ', pollyFile);
 
-    const writeFile = await writeFilePromise(`/tmp/${message.id}.mp3`, pollyFile.AudioStream);
+      const flag = i === 0 ? 'w' : 'a';
+      const writeFile = await writeFilePromise(`/tmp/${message.id}.mp3`, pollyFile.AudioStream, { flag });
 
-    console.log('SUCCESS writing file: ', writeFile);
+      console.log('SUCCESS writing file chunk: ', writeFile);
+    }
+
+    console.log('SUCCESS writing all text chunk to /tmp');
 
     const uploadToS3 = await s3.putObject({
       ACL: 'public-read',
