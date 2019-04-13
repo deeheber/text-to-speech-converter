@@ -101,7 +101,7 @@ Resources:
         - Version: 2012-10-17
           Statement:
             - Effect: Allow
-              Resource: !GetAtt FileStore.Arn
+              Resource: !Join [ '', [ !GetAtt FileStore.Arn, /* ] ]
               Action:
                 - s3:PutObject
         - Version: 2012-10-17
