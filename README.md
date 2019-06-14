@@ -6,7 +6,7 @@ This is an application that takes in text and outputs an audio file of that text
 ### Technologies Used
 - [Stackery](https://www.stackery.io/)
 - [AWS](https://aws.amazon.com/)
-  - SAM (Server Application Model)
+  - [AWS SAM](https://aws.amazon.com/serverless/sam/)
   - CloudFormation
   - S3
   - API Gateway
