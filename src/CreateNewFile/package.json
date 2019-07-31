@@ -1,5 +1,6 @@
 {
-  "private": true,
+  "name": "create-new-file",
+  "version": "1.0.0",
   "dependencies": {
     "aws-sdk": "~2",
     "uuid": "^3.3.2"

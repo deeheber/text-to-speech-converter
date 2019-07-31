@@ -1,5 +1,6 @@
 {
-  "private": true,
+  "name": "convert-to-audio",
+  "version": "1.0.0",
   "dependencies": {
     "aws-sdk": "~2",
     "utils": "file:../utils"
