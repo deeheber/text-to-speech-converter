@@ -101,7 +101,10 @@ Resources:
         - Version: 2012-10-17
           Statement:
             - Effect: Allow
-              Resource: !Join [ '', [ !GetAtt FileStore.Arn, /* ] ]
+              Resource: !Join
+                - ''
+                - - !GetAtt FileStore.Arn
+                  - /*
               Action:
                 - s3:PutObject
                 - s3:PutObjectAcl
@@ -159,6 +162,28 @@ Resources:
           TABLE_ARN: !GetAtt Table.Arn
           FUNCTION_NAME: !Ref ConvertToAudio
           FUNCTION_ARN: !GetAtt ConvertToAudio.Arn
+  PopulateFrontend:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-PopulateFrontend
+      Description: !Sub
+        - Stack ${StackTagName} Environment ${EnvironmentTagName} Function ${ResourceName}
+        - ResourceName: PopulateFrontend
+      CodeUri: src/PopulateFrontend
+      Handler: index.handler
+      Runtime: nodejs10.x
+      MemorySize: 3008
+      Timeout: 30
+      Tracing: Active
+      Policies:
+        - AWSXrayWriteOnlyAccess
+        - S3CrudPolicy:
+            BucketName: !Ref FrontEnd
+      Environment:
+        Variables:
+          API_URL: !Sub https://${Api}.execute-api.${AWS::Region}.amazonaws.com/${Api.Stage}
+          BUCKET_NAME: !Ref FrontEnd
+          BUCKET_ARN: !GetAtt FrontEnd.Arn
 Parameters:
   StackTagName:
     Type: String
