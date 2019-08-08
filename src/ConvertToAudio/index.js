@@ -51,7 +51,7 @@ exports.handler = async message => {
       UpdateExpression: 'SET #file_status = :status, #s3_url = :url',
       ExpressionAttributeValues: {
         ':status': 'COMPLETE',
-        ':url': `https://s3.amazonaws.com/${process.env.BUCKET_NAME}/${message.id}.mp3`
+        ':url': `https://${process.env.BUCKET_NAME}.s3-${process.env.AWS_REGION}.amazonaws.com/${message.id}.mp3`
       },
       ExpressionAttributeNames: {
         '#file_status': 'status',
