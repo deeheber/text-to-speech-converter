@@ -1,7 +1,10 @@
 {
-  "name": "function",
+  "name": "populate-fronteend",
   "version": "1.0.0",
   "dependencies": {
-    "aws-sdk": "~2"
+    "aws-sdk": "~2",
+    "cfn-custom-resource": "^4.0.14",
+    "mime-types": "^2.1.24",
+    "recursive-readdir": "^2.2.2"
   }
 }

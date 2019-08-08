@@ -3,6 +3,6 @@
   "version": "1.0.0",
   "dependencies": {
     "aws-sdk": "~2",
-    "utils": "file:../utils"
+    "utils": "file:../../../src/utils"
   }
 }
