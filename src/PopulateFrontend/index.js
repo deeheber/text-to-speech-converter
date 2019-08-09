@@ -1,5 +1,4 @@
 const AWS = require('aws-sdk');
-const s3 = new AWS.S3();
 const { sendSuccess, sendFailure } = require('cfn-custom-resource');
 const { execFile } = require('child_process');
 const fs = require('fs');
@@ -7,44 +6,20 @@ const mime = require('mime-types');
 const path = require('path');
 const recursiveReaddir = require('recursive-readdir');
 
+const s3 = new AWS.S3();
+const tmpDir = `/tmp/react-front-end${process.pid}`;
+const npm = 'npm';
+
 exports.handler = async message => {
   // Log the event argument for debugging and for use in local development.
   console.log(JSON.stringify(message, undefined, 2));
 
-  const tmpDir = `/tmp/react-front-end${process.pid}`;
-  const npm = 'npm';
-
   try {
-    await spawnPromise('rm', ['-rf', tmpDir]);
-    await spawnPromise('cp', ['-R', 'frontend-content/', tmpDir]);
-    await spawnPromise(
-      npm,
-      ['--production',
-        '--no-progress',
-        '--loglevel=error',
-        '--cache', path.join('/tmp', 'npm'),
-        '--userconfig', path.join('/tmp', 'npmrc'),
-        'install'
-      ],
-      {cwd: tmpDir}
-    );
-    console.log('NPM INSTALL SUCCESS');
-    await spawnPromise(
-      npm,
-      ['--production',
-        '--no-progress',
-        '--loglevel=error',
-        '--cache', path.join('/tmp', 'npm'),
-        '--userconfig', path.join('/tmp', 'npmrc'),
-        'run', 'build'
-      ],
-      {cwd: tmpDir}
-    );
-    console.log('NPM RUN BUILD SUCCESS');
+    await setup();
+    await uploadContent();
     // TODO:
     // - Grab the api url and create a config file
-    // - Add config file to built files
-    await uploadContent();
+    // - Upload config to correct location
     await sendSuccess('PopulateFrontend', {}, message);
   } catch (err) {
     console.error('Failed to upload site content:');
@@ -52,20 +27,6 @@ exports.handler = async message => {
 
     await sendFailure(err.message, message);
     throw err;
-  }
-
-  async function uploadContent () {
-    const files = await recursiveReaddir(`${tmpDir}/build`);
-
-    const promises = files.map(file => s3.putObject({
-      Bucket: process.env.BUCKET_NAME,
-      Key: path.relative(`${tmpDir}/build`, file),
-      Body: fs.createReadStream(file),
-      ContentType: mime.lookup(file) || 'application/octet-stream',
-      ACL: 'public-read'
-    }).promise());
-
-    await Promise.all(promises);
   }
 };
 
@@ -97,4 +58,47 @@ function spawnPromise (command, args, options) {
       }
     });
   });
+}
+
+async function setup () {
+  await spawnPromise('rm', ['-rf', tmpDir]);
+  await spawnPromise('cp', ['-R', 'frontend-content/', tmpDir]);
+  await spawnPromise(
+    npm,
+    ['--production',
+      '--no-progress',
+      '--loglevel=error',
+      '--cache', path.join('/tmp', 'npm'),
+      '--userconfig', path.join('/tmp', 'npmrc'),
+      'install'
+    ],
+    {cwd: tmpDir}
+  );
+  console.log('NPM INSTALL SUCCESS');
+  await spawnPromise(
+    npm,
+    ['--production',
+      '--no-progress',
+      '--loglevel=error',
+      '--cache', path.join('/tmp', 'npm'),
+      '--userconfig', path.join('/tmp', 'npmrc'),
+      'run', 'build'
+    ],
+    {cwd: tmpDir}
+  );
+  console.log('NPM RUN BUILD SUCCESS');
+}
+
+async function uploadContent () {
+  const files = await recursiveReaddir(`${tmpDir}/build`);
+
+  const promises = files.map(file => s3.putObject({
+    Bucket: process.env.BUCKET_NAME,
+    Key: path.relative(`${tmpDir}/build`, file),
+    Body: fs.createReadStream(file),
+    ContentType: mime.lookup(file) || 'application/octet-stream',
+    ACL: 'public-read'
+  }).promise());
+
+  await Promise.all(promises);
 }
