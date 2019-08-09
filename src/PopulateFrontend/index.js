@@ -29,11 +29,11 @@ exports.handler = async message => {
 
   async function uploadContent () {
     // TODO ignore config file
-    const files = await recursiveReaddir('static');
+    const files = await recursiveReaddir('frontend-content/build');
 
     const promises = files.map(file => s3.putObject({
       Bucket: process.env.BUCKET_NAME,
-      Key: path.relative('static', file),
+      Key: path.relative('frontend-content/build', file),
       Body: fs.createReadStream(file),
       ContentType: mime.lookup(file) || 'application/octet-stream',
       ACL: 'public-read'
