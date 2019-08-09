@@ -1,6 +1,7 @@
 const AWS = require('aws-sdk');
 const s3 = new AWS.S3();
 const { sendSuccess, sendFailure } = require('cfn-custom-resource');
+const { execFile } = require('child_process');
 const fs = require('fs');
 const mime = require('mime-types');
 const path = require('path');
@@ -10,15 +11,41 @@ exports.handler = async message => {
   // Log the event argument for debugging and for use in local development.
   console.log(JSON.stringify(message, undefined, 2));
 
-  try {
-    await sendSuccess('PopulateFrontend', {}, message);
+  const tmpDir = `/tmp/react-front-end${process.pid}`;
+  const npm = 'npm';
 
+  try {
+    await spawnPromise('rm', ['-rf', tmpDir]);
+    await spawnPromise('cp', ['-R', 'frontend-content/', tmpDir]);
+    await spawnPromise(
+      npm,
+      ['--production',
+        '--no-progress',
+        '--loglevel=error',
+        '--cache', path.join('/tmp', 'npm'),
+        '--userconfig', path.join('/tmp', 'npmrc'),
+        'install'
+      ],
+      {cwd: tmpDir}
+    );
+    console.log('NPM INSTALL SUCCESS');
+    await spawnPromise(
+      npm,
+      ['--production',
+        '--no-progress',
+        '--loglevel=error',
+        '--cache', path.join('/tmp', 'npm'),
+        '--userconfig', path.join('/tmp', 'npmrc'),
+        'run', 'build'
+      ],
+      {cwd: tmpDir}
+    );
+    console.log('NPM RUN BUILD SUCCESS');
     // TODO:
     // - Grab the api url and create a config file
-    // - npm install and npm build
-    // - Upload the built files with the config to s3
-
+    // - Add config file to built files
     await uploadContent();
+    await sendSuccess('PopulateFrontend', {}, message);
   } catch (err) {
     console.error('Failed to upload site content:');
     console.error(err);
@@ -28,12 +55,11 @@ exports.handler = async message => {
   }
 
   async function uploadContent () {
-    // TODO ignore config file
-    const files = await recursiveReaddir('frontend-content/build');
+    const files = await recursiveReaddir(`${tmpDir}/build`);
 
     const promises = files.map(file => s3.putObject({
       Bucket: process.env.BUCKET_NAME,
-      Key: path.relative('frontend-content/build', file),
+      Key: path.relative(`${tmpDir}/build`, file),
       Body: fs.createReadStream(file),
       ContentType: mime.lookup(file) || 'application/octet-stream',
       ACL: 'public-read'
@@ -42,3 +68,33 @@ exports.handler = async message => {
     await Promise.all(promises);
   }
 };
+
+function spawnPromise (command, args, options) {
+  console.log(`Running \`${command} '${args.join("' '")}'\`...`);
+
+  options = options || {};
+
+  if (!options.env) {
+    options.env = {};
+  }
+
+  Object.assign(options.env, process.env);
+
+  return new Promise((resolve, reject) => {
+    execFile(command, args, options, (err, stdout, stderr) => {
+      console.log('STDOUT:');
+      console.log(stdout);
+      console.log('STDERR:');
+      console.log(stderr);
+
+      if (err) {
+        err.stdout = stdout;
+        err.stderr = stderr;
+
+        reject(err);
+      } else {
+        resolve({ stdout: stdout, stderr: stderr });
+      }
+    });
+  });
+}
