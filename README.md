@@ -18,10 +18,9 @@ This is an application that takes in text and outputs an audio file of that text
 ![Setup](https://user-images.githubusercontent.com/12616554/55670972-6445f100-583f-11e9-9e4e-4c62a7422884.png)
 
 ### Directions To Run
-1. Fork this repo
-2. Login to Stackery > create a new stack > Use existing repo > Plug in the url for your forked version of the code
-3. Deploy the stack (will need to add an evironment first if you haven't prior)
-4. [Invoke the URLs from API Gateway](https://docs.aws.amazon.com/apigateway/latest/developerguide/how-to-call-api.html)...could also use something like [Postman](https://www.getpostman.com/) if you prefer.
+1. Clone this repo
+2. Import and deploy the stack via Stackery. Getting started directions [here](https://docs.stackery.io/docs/using-stackery/introduction/). TL;DR sign up for free account > create a stack and an environment > deploy.
+3. [Invoke the URLs from API Gateway](https://docs.aws.amazon.com/apigateway/latest/developerguide/how-to-call-api.html)...could also use something like [Postman](https://www.getpostman.com/) if you prefer. ([Frontend Coming Soon](https://github.com/deeheber/text-to-speech-converter/issues/5))
 
 ### Known Limitations For Larger Requests
 - There's a [maximum item size](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Limits.html#limits-items) in DynamoDB (includes all keys/values), so this can't go beyond that. [Issue here](https://github.com/deeheber/text-to-speech-converter/issues/11)
