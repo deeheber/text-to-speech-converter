@@ -27,6 +27,9 @@ Resources:
               responses: {}
       EndpointConfiguration: REGIONAL
       TracingEnabled: true
+      Cors:
+        AllowHeaders: '''Authorization,Content-Type'''
+        AllowOrigin: '''*'''
   Table:
     Type: AWS::DynamoDB::Table
     Properties:
@@ -101,7 +104,10 @@ Resources:
         - Version: 2012-10-17
           Statement:
             - Effect: Allow
-              Resource: !Join [ '', [ !GetAtt FileStore.Arn, /* ] ]
+              Resource: !Join
+                - ''
+                - - !GetAtt FileStore.Arn
+                  - /*
               Action:
                 - s3:PutObject
                 - s3:PutObjectAcl
