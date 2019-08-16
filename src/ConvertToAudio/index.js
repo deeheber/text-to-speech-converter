@@ -64,7 +64,10 @@ exports.handler = async message => {
 
     response = {
       statusCode: 200,
-      headers: {},
+      headers: {
+        'Access-Control-Allow-Credentials': true,
+        'Access-Control-Allow-Origin': '*'
+      },
       body: JSON.stringify(updateDynamo.Attributes)
     };
   } catch (err) {
