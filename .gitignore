@@ -3,3 +3,6 @@ node_modules
 .aws-sam
 .stackery
 .stackery-template.yaml
+
+# We want to dynamically generate this file on deploy
+src/PopulateFrontend/frontend-content/src/config.js

@@ -4,7 +4,9 @@ const { execFile } = require('child_process');
 const fs = require('fs');
 const mime = require('mime-types');
 const path = require('path');
+const promisify = require('util').promisify;
 const recursiveReaddir = require('recursive-readdir');
+const writeFilePromise = promisify(fs.writeFile);
 
 const s3 = new AWS.S3();
 const tmpDir = `/tmp/react-front-end${process.pid}`;
@@ -61,8 +63,17 @@ function spawnPromise (command, args, options) {
 }
 
 async function setup () {
+  const configFileContents = `export default {
+    backendAPI: '${process.env.API_URL}'
+  };`;
+
+  // Clear out tmp just in case
   await spawnPromise('rm', ['-rf', tmpDir]);
+  // Copy frontend-content to /tmp
   await spawnPromise('cp', ['-R', 'frontend-content/', tmpDir]);
+  // Write config file that contains the API URL
+  await writeFilePromise(`/tmp/src/config.js`, configFileContents);
+  // npm install
   await spawnPromise(
     npm,
     ['--production',
@@ -75,6 +86,7 @@ async function setup () {
     {cwd: tmpDir}
   );
   console.log('NPM INSTALL SUCCESS');
+  // npm build
   await spawnPromise(
     npm,
     ['--production',
