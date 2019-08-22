@@ -21,7 +21,7 @@ This is an application that takes in text and outputs an audio file of that text
 ### Directions To Run
 1. Clone this repo
 2. Import and deploy the stack via Stackery. Getting started directions [here](https://docs.stackery.io/docs/using-stackery/introduction/). TL;DR sign up for free account > create a stack and an environment > deploy.
-3. [Invoke the URLs from API Gateway](https://docs.aws.amazon.com/apigateway/latest/developerguide/how-to-call-api.html)...could also use something like [Postman](https://www.getpostman.com/) if you prefer. ([Frontend Coming Soon](https://github.com/deeheber/text-to-speech-converter/issues/5))
+3. Navigate to the url for your frontend. Should be something like: `http://{stackery stack name}-{stackery environment name}-filestore.s3-website-{your AWS region}.amazonaws.com`
 
 ### Known Limitations For Larger Requests
 - There's a [maximum item size](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Limits.html#limits-items) in DynamoDB (includes all keys/values), so this can't go beyond that. [Issue here](https://github.com/deeheber/text-to-speech-converter/issues/11)

@@ -3,7 +3,6 @@ import React from 'react';
 import '../styles/Table.css';
 
 function Table (props) {
-  console.log(props.rows);
   return (
     <table>
       <thead>
@@ -16,6 +15,7 @@ function Table (props) {
       </thead>
       <tbody>
         {/* TODO: don't show download link if no url */}
+        {/* TODO: add delete option */}
         {props.rows.map(row => (
           <tr key={row.id}>
             <td>{row.text.substring(0, 200)}</td>
