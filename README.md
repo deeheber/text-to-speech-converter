@@ -16,7 +16,7 @@ This is an application that takes in text and outputs an audio file of that text
 - [Node](https://nodejs.org/en/)
 - [ReactJS](https://reactjs.org/)
 
-![Setup](https://user-images.githubusercontent.com/12616554/63545337-fc393400-c4db-11e9-8709-17fb76744187.png)
+![Setup](https://user-images.githubusercontent.com/12616554/63557262-d4a69380-c4fc-11e9-8403-6413732f1c77.png)
 
 ### Directions To Run
 1. Clone this repo
