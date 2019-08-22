@@ -21,6 +21,7 @@ exports.handler = async message => {
     if (!Item) {
       throw new Error('An item with that id does not exist');
     }
+    console.log(`Item ${Item.id} exists in the system`);
 
     const bucketParams = {
       Bucket: process.env.BUCKET_NAME,
@@ -28,7 +29,11 @@ exports.handler = async message => {
     };
 
     await s3.deleteObject(bucketParams).promise();
+    console.log(`SUCCESS DELETING ${Item.id}.mp3 OBJECT IN S3`);
+
     await dynamodb.delete(dynamoParams).promise();
+    console.log(`SUCCESS DELETING ${Item.id} FROM DYNAMODB`);
+
     statusCode = 200;
     response = 'Success deleting item';
   } catch (err) {
@@ -47,6 +52,6 @@ exports.handler = async message => {
       'Access-Control-Allow-Credentials': true,
       'Access-Control-Allow-Origin': '*'
     },
-    response: JSON.stringify(response)
+    body: JSON.stringify(response)
   };
 };
