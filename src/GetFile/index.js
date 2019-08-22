@@ -41,7 +41,7 @@ exports.handler = async message => {
   return {
     statusCode,
     headers: {
-      'Access-Control-Allow-Credentials' : true,
+      'Access-Control-Allow-Credentials': true,
       'Access-Control-Allow-Origin': '*'
     },
     body: JSON.stringify(response)
