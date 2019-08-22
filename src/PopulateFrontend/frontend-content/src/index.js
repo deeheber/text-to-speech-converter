@@ -1,8 +1,21 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
-import './index.css';
-import App from './App';
+import Amplify from 'aws-amplify';
+
+import App from './components/App';
+import config from './config';
 import * as serviceWorker from './serviceWorker';
+
+Amplify.configure({
+  API: {
+    endpoints: [
+      {
+        name: 'backend',
+        endpoint: config.backendAPI
+      }
+    ]
+  }
+});
 
 ReactDOM.render(<App />, document.getElementById('root'));
 
