@@ -11,6 +11,7 @@ function Table (props) {
           <th>Status</th>
           <th>Voice</th>
           <th>Download</th>
+          <th>Delete</th>
         </tr>
       </thead>
       <tbody>
@@ -22,6 +23,7 @@ function Table (props) {
             <td>{row.status}</td>
             <td>{row.voice}</td>
             <td><a href={row.url}>Download</a></td>
+            <td><button className='deleteButton' onClick={() => props.onDelete(row.id)}>X</button></td>
           </tr>
 
         ))}

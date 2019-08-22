@@ -13,7 +13,7 @@ textArea {
   width: 500px;
 }
 
-button {
+.submitButton {
   display: block;
   margin: 1% auto 1% 460px;
   cursor: pointer;
