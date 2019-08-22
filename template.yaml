@@ -27,6 +27,9 @@ Resources:
               responses: {}
       EndpointConfiguration: REGIONAL
       TracingEnabled: true
+      Cors:
+        AllowHeaders: '''Authorization,Content-Type'''
+        AllowOrigin: '''*'''
   Table:
     Type: AWS::DynamoDB::Table
     Properties:
