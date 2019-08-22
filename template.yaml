@@ -25,6 +25,13 @@ Resources:
                 type: aws_proxy
                 uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${CreateNewFile.Arn}/invocations
               responses: {}
+          /file/{id}:
+            delete:
+              x-amazon-apigateway-integration:
+                httpMethod: POST
+                type: aws_proxy
+                uri: !Sub arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DeleteFile.Arn}/invocations
+              responses: {}
       EndpointConfiguration: REGIONAL
       TracingEnabled: true
       Cors:
@@ -192,6 +199,52 @@ Resources:
     Properties:
       ServiceToken: !GetAtt PopulateFrontend.Arn
       DeploymentTimestamp: !Ref DeploymentTimestamp
+  DeleteFile:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-DeleteFile
+      Description: !Sub
+        - Stack ${StackTagName} Environment ${EnvironmentTagName} Function ${ResourceName}
+        - ResourceName: DeleteFile
+      CodeUri: src/DeleteFile
+      Handler: index.handler
+      Runtime: nodejs10.x
+      MemorySize: 3008
+      Timeout: 45
+      Tracing: Active
+      Policies:
+        - AWSXrayWriteOnlyAccess
+        - S3CrudPolicy:
+            BucketName: !Ref FileStore
+        - Version: 2012-10-17
+          Statement:
+            - Effect: Allow
+              Resource: !GetAtt Table.Arn
+              Action:
+                - dynamodb:GetItem
+                - dynamodb:DeleteItem
+        - Version: 2012-10-17
+          Statement:
+            - Effect: Allow
+              Resource: !Join
+                - ''
+                - - !GetAtt FileStore.Arn
+                  - /*
+              Action:
+                - s3:DeleteObject
+      Events:
+        ApiDELETEfileid:
+          Type: Api
+          Properties:
+            Path: /file/{id}
+            Method: DELETE
+            RestApiId: !Ref Api
+      Environment:
+        Variables:
+          BUCKET_NAME: !Ref FileStore
+          BUCKET_ARN: !GetAtt FileStore.Arn
+          TABLE_NAME: !Ref Table
+          TABLE_ARN: !GetAtt Table.Arn
 Parameters:
   StackTagName:
     Type: String
