@@ -72,7 +72,7 @@ async function setup () {
   // Copy frontend-content to /tmp
   await spawnPromise('cp', ['-R', 'frontend-content/', tmpDir]);
   // Write config file that contains the API URL
-  await writeFilePromise(`/tmp/src/config.js`, configFileContents);
+  await writeFilePromise(`${tmpDir}/src/config.js`, configFileContents);
   // npm install
   await spawnPromise(
     npm,
