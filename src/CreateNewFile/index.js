@@ -51,7 +51,10 @@ exports.handler = async message => {
     console.log('An error occurred when invoking ConvertToAudio function: ', err);
     response = {
       statusCode: err.StatusCode || 500,
-      headers: {},
+      headers: {
+        'Access-Control-Allow-Credentials': true,
+        'Access-Control-Allow-Origin': '*'
+      },
       body: JSON.stringify(err.message)
     };
   }
