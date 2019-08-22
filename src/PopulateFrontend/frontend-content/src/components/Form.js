@@ -20,6 +20,7 @@ function Form (props) {
         </select>
         <textarea name='text' value={props.formData.text} onChange={props.onChange} />
         <button type='submit' className='submitButton'>Submit</button>
+        <span className='messageText'>{props.message}</span>
       </form>
     </div>
   );

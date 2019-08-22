@@ -13,7 +13,8 @@ class App extends Component {
       formData: {
         voice: '',
         text: ''
-      }
+      },
+      message: ''
     };
 
     this.handleSubmit = this.handleSubmit.bind(this);
@@ -41,12 +42,13 @@ class App extends Component {
 
   async handleSubmit (event) {
     event.preventDefault();
-    // TODO: get rid of alert boxes
-    // Add some sort of loading indicator
+
     if (this.state.formData.text === '') {
-      alert('Please enter some text before submitting');
+      this.setState({ message: 'Please enter some text before submitting' });
       return;
     }
+
+    this.setState({ message: 'Loading...' });
 
     try {
       const result = await API.post('backend', '/file', { body: this.state.formData });
@@ -59,12 +61,11 @@ class App extends Component {
         formData: {
           voice: '',
           text: ''
-        }
+        },
+        message: ''
       });
-
-      alert(`Successfully submitted. Download the file at ${result.url}`);
     } catch (err) {
-      alert(`An error occurred: ${err.message}`);
+      this.setState({ message: `An error occurred: ${err.message}` });
       console.error(err);
     }
   }
@@ -92,7 +93,6 @@ class App extends Component {
   }
 
   render () {
-    console.log(this.state);
     return (
       <div className='container'>
         <h1>Text to speech converter</h1>
@@ -100,6 +100,7 @@ class App extends Component {
           onSubmit={this.handleSubmit}
           onChange={this.handleChange}
           formData={this.state.formData}
+          message={this.state.message}
         />
         <Table
           rows={this.state.rows}
