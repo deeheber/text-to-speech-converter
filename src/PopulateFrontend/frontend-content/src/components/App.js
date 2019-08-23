@@ -13,11 +13,13 @@ class App extends Component {
       formData: {
         voice: '',
         text: ''
-      }
+      },
+      message: ''
     };
 
     this.handleSubmit = this.handleSubmit.bind(this);
     this.handleChange = this.handleChange.bind(this);
+    this.handleDelete = this.handleDelete.bind(this);
   }
 
   async componentDidMount () {
@@ -40,11 +42,13 @@ class App extends Component {
 
   async handleSubmit (event) {
     event.preventDefault();
-    // TODO: get rid of alert boxes
+
     if (this.state.formData.text === '') {
-      alert('Please enter some text before submitting');
+      this.setState({ message: 'Please enter some text before submitting' });
       return;
     }
+
+    this.setState({ message: 'Loading...' });
 
     try {
       const result = await API.post('backend', '/file', { body: this.state.formData });
@@ -57,10 +61,31 @@ class App extends Component {
         formData: {
           voice: '',
           text: ''
-        }
+        },
+        message: ''
       });
+    } catch (err) {
+      this.setState({ message: `An error occurred: ${err.message}` });
+      console.error(err);
+    }
+  }
 
-      alert(`Successfully submitted. Download the file at ${result.url}`);
+  async handleDelete (id) {
+    const deleteConfirm = window.confirm('Do you really want to delete?');
+    if (!deleteConfirm) {
+      return;
+    }
+
+    try {
+      await API.del('backend', `/file/${id}`);
+
+      const index = this.state.rows.findIndex(obj => obj.id === id);
+      this.setState({
+        rows: [
+          ...this.state.rows.slice(0, index),
+          ...this.state.rows.slice(index + 1)
+        ]
+      });
     } catch (err) {
       alert(`An error occurred: ${err.message}`);
       console.error(err);
@@ -75,8 +100,12 @@ class App extends Component {
           onSubmit={this.handleSubmit}
           onChange={this.handleChange}
           formData={this.state.formData}
+          message={this.state.message}
         />
-        <Table rows={this.state.rows} />
+        <Table
+          rows={this.state.rows}
+          onDelete={this.handleDelete}
+        />
       </div>
     );
   }
