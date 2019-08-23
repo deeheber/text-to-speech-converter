@@ -1,5 +1,5 @@
 {
-  "name": "function",
+  "name": "delete-file",
   "version": "1.0.0",
   "dependencies": {
     "aws-sdk": "^2.516.0"
