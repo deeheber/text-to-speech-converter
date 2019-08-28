@@ -19,9 +19,6 @@ exports.handler = async message => {
   try {
     await setup();
     await uploadContent();
-    // TODO:
-    // - Grab the api url and create a config file
-    // - Upload config to correct location
     await sendSuccess('PopulateFrontend', {}, message);
   } catch (err) {
     console.error('Failed to upload site content:');
