@@ -7,35 +7,19 @@ exports.handler = async message => {
   let response;
   let statusCode;
 
-  // determine if we're getting a single  file or returning all of them
-  if (message.queryStringParameters !== null && 'id' in message.queryStringParameters) {
-    const listParams = {
-      TableName: process.env.TABLE_NAME,
-      Key: { id: message.queryStringParameters.id }
-    };
+  const listParams = {
+    TableName: process.env.TABLE_NAME,
+    Select: 'ALL_ATTRIBUTES'
+  };
 
-    try {
-      response = await dynamodb.get(listParams).promise();
-      statusCode = 200;
-    } catch (err) {
-      console.log('An error occurred pulling from the table: ', err);
-      response = err.message;
-      statusCode = err.statusCode;
-    }
-  } else {
-    const getParams = {
-      TableName: process.env.TABLE_NAME,
-      Select: 'ALL_ATTRIBUTES'
-    };
-
-    try {
-      response = await dynamodb.scan(getParams).promise();
-      statusCode = 200;
-    } catch (err) {
-      console.log('An error occurred scanning the table: ', err);
-      response = err.message;
-      statusCode = err.statusCode;
-    }
+  try {
+    // TODO add looping with `ExclusiveStartKey` and `LastEvaluatedKey` for larger tables
+    response = await dynamodb.scan(listParams).promise();
+    statusCode = 200;
+  } catch (err) {
+    console.log('An error occurred scanning the table: ', err);
+    response = err.message;
+    statusCode = err.statusCode || 500;
   }
 
   return {

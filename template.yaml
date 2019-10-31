@@ -32,6 +32,13 @@ Resources:
                 type: aws_proxy
                 uri: !Sub arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DeleteFile.Arn}/invocations
               responses: {}
+          /voices:
+            get:
+              x-amazon-apigateway-integration:
+                httpMethod: POST
+                type: aws_proxy
+                uri: !Sub arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GetVoices.Arn}/invocations
+              responses: {}
       EndpointConfiguration: REGIONAL
       TracingEnabled: true
       Cors:
@@ -217,6 +224,34 @@ Resources:
           BUCKET_ARN: !GetAtt FileStore.Arn
           TABLE_NAME: !Ref Table
           TABLE_ARN: !GetAtt Table.Arn
+  GetVoices:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-GetVoices
+      Description: !Sub
+        - Stack ${StackTagName} Environment ${EnvironmentTagName} Function ${ResourceName}
+        - ResourceName: GetVoices
+      CodeUri: src/GetVoices
+      Handler: index.handler
+      Runtime: nodejs10.x
+      MemorySize: 3008
+      Timeout: 60
+      Tracing: Active
+      Policies:
+        - AWSXrayWriteOnlyAccess
+        - Version: 2012-10-17
+          Statement:
+            - Effect: Allow
+              Resource: '*'
+              Action:
+                - polly:DescribeVoices
+      Events:
+        ApiGETvoices:
+          Type: Api
+          Properties:
+            Path: /voices
+            Method: GET
+            RestApiId: !Ref Api
 Parameters:
   StackTagName:
     Type: String

@@ -1,9 +1,19 @@
 import React, { Component } from 'react';
-import { API } from 'aws-amplify';
+import API from '@aws-amplify/api';
 import Form from './Form';
 import Table from './Table';
 
 import '../styles/App.css';
+
+import config from '../config';
+API.configure({
+  endpoints: [
+    {
+      name: 'backend',
+      endpoint: config.backendAPI
+    }
+  ]
+});
 
 class App extends Component {
   constructor () {
@@ -14,7 +24,8 @@ class App extends Component {
         voice: '',
         text: ''
       },
-      message: ''
+      message: '',
+      voiceList: []
     };
 
     this.handleSubmit = this.handleSubmit.bind(this);
@@ -25,7 +36,11 @@ class App extends Component {
   async componentDidMount () {
     try {
       const { Items } = await API.get('backend', '/file');
-      this.setState({ rows: Items });
+      const { Voices } = await API.get('backend', '/voices');
+      this.setState({
+        rows: Items,
+        voiceList: Voices
+      });
     } catch (err) {
       console.error(err);
     }
@@ -101,6 +116,7 @@ class App extends Component {
           onChange={this.handleChange}
           formData={this.state.formData}
           message={this.state.message}
+          voiceList={this.state.voiceList}
         />
         <Table
           rows={this.state.rows}
