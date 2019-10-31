@@ -8,7 +8,7 @@ const dynamodb = new AWS.DynamoDB.DocumentClient();
 const polly = new AWS.Polly();
 const s3 = new AWS.S3();
 
-const { chunkText } = require('utils');
+const chunkText = require('./chunkText');
 
 exports.handler = async message => {
   console.log('CreateNewFile invoked  with  message: ', message);
