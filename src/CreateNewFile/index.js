@@ -26,7 +26,7 @@ exports.handler = async message => {
       Item: {
         id,
         /* To account for DynamoDB limits: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Limits.html#limits-items */
-        text: text.substring(0, 500),
+        text: text.substring(0, 1500),
         voice,
         status: 'PROCESSING'
       }
