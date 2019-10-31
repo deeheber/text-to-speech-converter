@@ -16,8 +16,6 @@ function Table (props) {
       </thead>
 
       <tbody>
-        {/* TODO: don't show download link if no url */}
-        {/* TODO: add delete option */}
         {props.rows.map(row => (
           <tr key={row.id}>
             <td>{row.text.substring(0, 200)}</td>

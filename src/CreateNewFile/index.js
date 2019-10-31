@@ -12,10 +12,11 @@ const { chunkText } = require('utils');
 
 exports.handler = async message => {
   console.log('CreateNewFile invoked  with  message: ', message);
+
   let response;
+  const id = uuid();
 
   try {
-    const id = uuid();
     const data = JSON.parse(message.body);
     const text = data.text;
     const voice = data.voice || 'Matthew';
@@ -96,8 +97,22 @@ exports.handler = async message => {
     };
   } catch (err) {
     console.log('ERROR: ', err);
+    console.log('Setting DynamoDB status to FAILED');
 
-    // TODO update dynamoDB status to FAILED here
+    const failDynamo = await dynamodb.update({
+      TableName: process.env.TABLE_NAME,
+      Key: { id },
+      UpdateExpression: 'SET #file_status = :status',
+      ExpressionAttributeValues: {
+        ':status': 'FAILED'
+      },
+      ExpressionAttributeNames: {
+        '#file_status': 'status'
+      },
+      ReturnValues: 'ALL_NEW'
+    }).promise();
+
+    console.log('Set DynamoDB to FAILED: ', failDynamo);
 
     response = {
       statusCode: err.statusCode || 500,
