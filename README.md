@@ -16,7 +16,7 @@ This is an application that takes in text and outputs an audio file of that text
 - [Node](https://nodejs.org/en/)
 - [ReactJS](https://reactjs.org/)
 
-![Setup](https://user-images.githubusercontent.com/12616554/63557262-d4a69380-c4fc-11e9-8403-6413732f1c77.png)
+![Setup](https://user-images.githubusercontent.com/12616554/67980485-c4392600-fbdb-11e9-9a1b-1c825ef316d7.png)
 
 ### Directions To Run
 1. Clone this repo
@@ -24,8 +24,7 @@ This is an application that takes in text and outputs an audio file of that text
 3. Navigate to the url for your frontend. Should be something like: `http://{stackery stack name}-{stackery environment name}-frontend.s3-website-us-west-2.amazonaws.com/`
 
 ### Known Limitations For Larger Requests
-- There's a [maximum item size](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Limits.html#limits-items) in DynamoDB (includes all keys/values), so this can't go beyond that. [Issue here](https://github.com/deeheber/text-to-speech-converter/issues/11)
-- Lambda has [limits](https://docs.aws.amazon.com/lambda/latest/dg/limits.html) for the invocation payload and `/tmp` directory storage. [Issue here](https://github.com/deeheber/text-to-speech-converter/issues/12)
+- Lambda has [limits](https://docs.aws.amazon.com/lambda/latest/dg/limits.html) for the `/tmp` directory storage.
 - Written with US-English in mind, so it might not convert as expected for other languages.
 
 ### Outstanding TODO Items / Open Bugs
