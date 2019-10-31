@@ -16,6 +16,10 @@ function Table (props) {
       </thead>
 
       <tbody>
+        {props.isLoading &&
+          <tr><td colSpan='5'>Loading...</td></tr>
+        }
+
         {props.rows.map(row => (
           <tr key={row.id}>
             <td>{row.text.substring(0, 200)}</td>
@@ -26,7 +30,11 @@ function Table (props) {
           </tr>
         ))}
 
-        { props.rows.length < 1 && <tr><td colSpan='5'>No converted text to speech records found. Start adding some using the form above.</td></tr>}
+        {!props.isLoading && props.rows.length < 1 &&
+          <tr>
+            <td colSpan='5'>No converted text to speech records found. Start adding some using the form above.</td>
+          </tr>
+        }
       </tbody>
     </table>
   );

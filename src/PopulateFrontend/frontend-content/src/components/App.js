@@ -25,7 +25,8 @@ class App extends Component {
         text: ''
       },
       message: '',
-      voiceList: []
+      voiceList: [],
+      isLoading: true
     };
 
     this.handleSubmit = this.handleSubmit.bind(this);
@@ -39,10 +40,12 @@ class App extends Component {
       const { Voices } = await API.get('backend', '/voices');
       this.setState({
         rows: Items,
-        voiceList: Voices
+        voiceList: Voices,
+        isLoading: false
       });
     } catch (err) {
       console.error(err);
+      this.setState({ isLoading: false });
     }
   }
 
@@ -121,6 +124,7 @@ class App extends Component {
         <Table
           rows={this.state.rows}
           onDelete={this.handleDelete}
+          isLoading={this.state.isLoading}
         />
       </div>
     );
