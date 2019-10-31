@@ -59,7 +59,7 @@ Resources:
         - ResourceName: GetFile
       CodeUri: src/GetFile
       Handler: index.handler
-      Runtime: nodejs8.10
+      Runtime: nodejs10.x
       MemorySize: 3008
       Timeout: 30
       Tracing: Active
@@ -93,21 +93,20 @@ Resources:
     Type: AWS::S3::Bucket
     Properties:
       BucketName: !Sub ${AWS::StackName}-filestore
-  ConvertToAudio:
+  CreateNewFile:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: !Sub ${AWS::StackName}-ConvertToAudio
+      FunctionName: !Sub ${AWS::StackName}-CreateNewFile
       Description: !Sub
         - Stack ${StackTagName} Environment ${EnvironmentTagName} Function ${ResourceName}
-        - ResourceName: ConvertToAudio
-      CodeUri: src/ConvertToAudio
+        - ResourceName: CreateNewFile
+      CodeUri: src/CreateNewFile
       Handler: index.handler
-      Runtime: nodejs8.10
+      Runtime: nodejs10.x
       MemorySize: 3008
       Timeout: 300
       Tracing: Active
       Policies:
-        - AWSXrayWriteOnlyAccess
         - Version: 2012-10-17
           Statement:
             - Effect: Allow
@@ -124,41 +123,14 @@ Resources:
               Resource: !GetAtt Table.Arn
               Action:
                 - dynamodb:UpdateItem
+                - dynamodb:PutItem
         - Version: 2012-10-17
           Statement:
             - Effect: Allow
               Resource: '*'
               Action:
                 - polly:SynthesizeSpeech
-      Environment:
-        Variables:
-          BUCKET_NAME: !Ref FileStore
-          BUCKET_ARN: !GetAtt FileStore.Arn
-          TABLE_NAME: !Ref Table
-          TABLE_ARN: !GetAtt Table.Arn
-  CreateNewFile:
-    Type: AWS::Serverless::Function
-    Properties:
-      FunctionName: !Sub ${AWS::StackName}-CreateNewFile
-      Description: !Sub
-        - Stack ${StackTagName} Environment ${EnvironmentTagName} Function ${ResourceName}
-        - ResourceName: CreateNewFile
-      CodeUri: src/CreateNewFile
-      Handler: index.handler
-      Runtime: nodejs8.10
-      MemorySize: 3008
-      Timeout: 300
-      Tracing: Active
-      Policies:
         - AWSXrayWriteOnlyAccess
-        - Version: 2012-10-17
-          Statement:
-            - Effect: Allow
-              Resource: !GetAtt Table.Arn
-              Action:
-                - dynamodb:PutItem
-        - LambdaInvokePolicy:
-            FunctionName: !Ref ConvertToAudio
       Events:
         ApiPOSTfile:
           Type: Api
@@ -170,8 +142,8 @@ Resources:
         Variables:
           TABLE_NAME: !Ref Table
           TABLE_ARN: !GetAtt Table.Arn
-          FUNCTION_NAME: !Ref ConvertToAudio
-          FUNCTION_ARN: !GetAtt ConvertToAudio.Arn
+          BUCKET_NAME: !Ref FileStore
+          BUCKET_ARN: !GetAtt FileStore.Arn
   PopulateFrontend:
     Type: AWS::Serverless::Function
     Properties:
