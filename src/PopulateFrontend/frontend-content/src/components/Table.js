@@ -10,6 +10,7 @@ function Table (props) {
           <th>Text</th>
           <th>Status</th>
           <th>Voice</th>
+          <th>Date</th>
           <th>Download</th>
           <th>Delete</th>
         </tr>
@@ -17,14 +18,15 @@ function Table (props) {
 
       <tbody>
         {props.isLoading &&
-          <tr><td colSpan='5'>Loading...</td></tr>
+          <tr><td colSpan='6'>Loading...</td></tr>
         }
 
         {props.rows.map(row => (
           <tr key={row.id}>
-            <td>{row.text.substring(0, 200)}</td>
+            <td>{row.text}</td>
             <td>{row.status}</td>
             <td>{row.voice}</td>
+            <td>{row.createdAt ? new Date(row.createdAt).toLocaleString() : ''}</td>
             <td><a href={row.url}>Download</a></td>
             <td><button className='deleteButton' onClick={() => props.onDelete(row.id)}>X</button></td>
           </tr>
@@ -32,7 +34,7 @@ function Table (props) {
 
         {!props.isLoading && props.rows.length < 1 &&
           <tr>
-            <td colSpan='5'>No converted text to speech records found. Start adding some using the form above.</td>
+            <td colSpan='6'>No converted text to speech records found. Start adding some using the form above.</td>
           </tr>
         }
       </tbody>

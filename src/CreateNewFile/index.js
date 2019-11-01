@@ -15,6 +15,7 @@ exports.handler = async message => {
 
   let response;
   const id = uuid();
+  const createdAt = Date.now();
 
   try {
     const data = JSON.parse(message.body);
@@ -28,7 +29,8 @@ exports.handler = async message => {
         /* To account for DynamoDB limits: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Limits.html#limits-items */
         text: text.substring(0, 1500),
         voice,
-        status: 'PROCESSING'
+        status: 'PROCESSING',
+        createdAt
       }
     };
 
