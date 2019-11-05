@@ -17,7 +17,7 @@ Resources:
               x-amazon-apigateway-integration:
                 httpMethod: POST
                 type: aws_proxy
-                uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GetFile.Arn}/invocations
+                uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ListFiles.Arn}/invocations
               responses: {}
             post:
               x-amazon-apigateway-integration:
@@ -57,39 +57,6 @@ Resources:
       StreamSpecification:
         StreamViewType: NEW_AND_OLD_IMAGES
       TableName: !Sub ${AWS::StackName}-Table
-  GetFile:
-    Type: AWS::Serverless::Function
-    Properties:
-      FunctionName: !Sub ${AWS::StackName}-GetFile
-      Description: !Sub
-        - Stack ${StackTagName} Environment ${EnvironmentTagName} Function ${ResourceName}
-        - ResourceName: GetFile
-      CodeUri: src/GetFile
-      Handler: index.handler
-      Runtime: nodejs10.x
-      MemorySize: 3008
-      Timeout: 30
-      Tracing: Active
-      Policies:
-        - AWSXrayWriteOnlyAccess
-        - Version: 2012-10-17
-          Statement:
-            - Effect: Allow
-              Resource: !GetAtt Table.Arn
-              Action:
-                - dynamodb:GetItem
-                - dynamodb:Scan
-      Events:
-        ApiGETfile:
-          Type: Api
-          Properties:
-            Path: /file
-            Method: GET
-            RestApiId: !Ref Api
-      Environment:
-        Variables:
-          TABLE_NAME: !Ref Table
-          TABLE_ARN: !GetAtt Table.Arn
   FrontEnd:
     Type: AWS::S3::Bucket
     Properties:
@@ -252,6 +219,39 @@ Resources:
             Path: /voices
             Method: GET
             RestApiId: !Ref Api
+  ListFiles:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-ListFiles
+      Description: !Sub
+        - Stack ${StackTagName} Environment ${EnvironmentTagName} Function ${ResourceName}
+        - ResourceName: ListFiles
+      CodeUri: src/ListFiles
+      Handler: index.handler
+      Runtime: nodejs10.x
+      MemorySize: 3008
+      Timeout: 30
+      Tracing: Active
+      Policies:
+        - AWSXrayWriteOnlyAccess
+        - Version: 2012-10-17
+          Statement:
+            - Effect: Allow
+              Resource: !GetAtt Table.Arn
+              Action:
+                - dynamodb:GetItem
+                - dynamodb:Scan
+      Events:
+        ApiGETfile:
+          Type: Api
+          Properties:
+            Path: /file
+            Method: GET
+            RestApiId: !Ref Api
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref Table
+          TABLE_ARN: !GetAtt Table.Arn
 Parameters:
   StackTagName:
     Type: String

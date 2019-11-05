@@ -1,5 +1,5 @@
 {
-  "name": "get-file",
+  "name": "list-files",
   "version": "1.0.0",
   "dependencies": {
     "aws-sdk": "~2"
