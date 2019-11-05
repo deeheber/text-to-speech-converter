@@ -5,7 +5,7 @@ module.exports = function chunkText (originalText) {
   let end = chunkLength;
 
   while (start < originalText.length) {
-    let nextChar = originalText[end];
+    const nextChar = originalText[end];
 
     // We've reached the end or we are at the end of a word
     // i.e. the next char is not a letter, number, -, or '

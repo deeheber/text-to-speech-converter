@@ -38,7 +38,7 @@ exports.handler = async message => {
     await dynamodb.put(params).promise();
     console.log('Item successfully added to the table  ', params);
 
-    console.log(`START convert to audio.`);
+    console.log('START convert to audio.');
 
     // Process text in chunks of 2500 characters
     // This is due to the polly limits for synthesizeSpeech

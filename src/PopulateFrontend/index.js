@@ -80,7 +80,7 @@ async function setup () {
       '--userconfig', path.join('/tmp', 'npmrc'),
       'install'
     ],
-    {cwd: tmpDir}
+    { cwd: tmpDir }
   );
   console.log('NPM INSTALL SUCCESS');
   // npm build
@@ -93,7 +93,7 @@ async function setup () {
       '--userconfig', path.join('/tmp', 'npmrc'),
       'run', 'build'
     ],
-    {cwd: tmpDir}
+    { cwd: tmpDir }
   );
   console.log('NPM RUN BUILD SUCCESS');
 }
