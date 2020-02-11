@@ -76,7 +76,7 @@ Resources:
         - ResourceName: CreateNewFile
       CodeUri: src/CreateNewFile
       Handler: index.handler
-      Runtime: nodejs10.x
+      Runtime: nodejs12.x
       MemorySize: 3008
       Timeout: 300
       Tracing: Active
@@ -127,7 +127,7 @@ Resources:
         - ResourceName: PopulateFrontend
       CodeUri: src/PopulateFrontend
       Handler: index.handler
-      Runtime: nodejs10.x
+      Runtime: nodejs12.x
       MemorySize: 3008
       Timeout: 600
       Tracing: Active
@@ -154,7 +154,7 @@ Resources:
         - ResourceName: DeleteFile
       CodeUri: src/DeleteFile
       Handler: index.handler
-      Runtime: nodejs10.x
+      Runtime: nodejs12.x
       MemorySize: 3008
       Timeout: 45
       Tracing: Active
@@ -200,7 +200,7 @@ Resources:
         - ResourceName: GetVoices
       CodeUri: src/GetVoices
       Handler: index.handler
-      Runtime: nodejs10.x
+      Runtime: nodejs12.x
       MemorySize: 3008
       Timeout: 60
       Tracing: Active
@@ -228,7 +228,7 @@ Resources:
         - ResourceName: ListFiles
       CodeUri: src/ListFiles
       Handler: index.handler
-      Runtime: nodejs10.x
+      Runtime: nodejs12.x
       MemorySize: 3008
       Timeout: 30
       Tracing: Active
