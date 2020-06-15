@@ -1,4 +1,4 @@
-const uuid = require('uuid/v4');
+const { v4: uuidv4 } = require('uuid');
 const fs = require('fs');
 const promisify = require('util').promisify;
 const writeFilePromise = promisify(fs.writeFile);
@@ -14,7 +14,7 @@ exports.handler = async message => {
   console.log('CreateNewFile invoked  with  message: ', message);
 
   let response;
-  const id = uuid();
+  const id = uuidv4();
   const createdAt = Date.now();
 
   try {
@@ -79,7 +79,7 @@ exports.handler = async message => {
       UpdateExpression: 'SET #file_status = :status, #s3_url = :url',
       ExpressionAttributeValues: {
         ':status': 'COMPLETE',
-        ':url': `https://${process.env.BUCKET_NAME}.s3-${process.env.AWS_REGION}.amazonaws.com/${id}.mp3`
+        ':url': `https://${process.env.BUCKET_NAME}.s3.amazonaws.com/${id}.mp3`
       },
       ExpressionAttributeNames: {
         '#file_status': 'status',
