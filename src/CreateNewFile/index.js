@@ -1,4 +1,4 @@
-const uuid = require('uuid/v4');
+const { v4: uuidv4 } = require('uuid');
 const fs = require('fs');
 const promisify = require('util').promisify;
 const writeFilePromise = promisify(fs.writeFile);
@@ -14,7 +14,7 @@ exports.handler = async message => {
   console.log('CreateNewFile invoked  with  message: ', message);
 
   let response;
-  const id = uuid();
+  const id = uuidv4();
   const createdAt = Date.now();
 
   try {
