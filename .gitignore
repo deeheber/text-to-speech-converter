@@ -5,4 +5,5 @@ node_modules
 .stackery-template.yaml
 
 # We want to dynamically generate this file on deploy
-src/PopulateFrontend/frontend-content/src/config.js
+src/frontend/src/config.js
+src/frontend/build

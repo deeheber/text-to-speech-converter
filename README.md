@@ -15,23 +15,35 @@ Deployed version [here](http://text-to-speech-converter-development-frontend.s3-
   - Lambda
   - DynamoDB
   - Polly
+  - CodeBuild
 - [Node](https://nodejs.org/en/)
 - [ReactJS](https://reactjs.org/)
-
-![Setup](https://user-images.githubusercontent.com/12616554/68250664-38a60780-ffd6-11e9-9f25-c6a6aa9e5c09.png)
 
 ### Directions To Run
 1. Clone this repo
 2. Import and deploy the stack via Stackery. Getting started directions [here](https://docs.stackery.io/docs/using-stackery/introduction/). TL;DR sign up for free account > create a stack and an environment > deploy.
 3. Navigate to the url for your frontend. Should be something like: `http://{stackery stack name}-{stackery environment name}-frontend.s3-website-us-west-2.amazonaws.com/`
 
+### Backend API Endpoints
+#### GET /voices
+Populates the voices dropdown list
+
+#### GET /file
+Gets all files and fills the table with existing text to speech conversations
+
+#### DELETE /file/{id}
+Deletes a file
+
+#### POST /file
+Creates a new text to speech conversion
+
 ### Running the Frontend Locally against a Deployed Backend
 1. Deploy the app
-2. `cd src/PopulateFrontend/frontend-content` && `npm install`
-3. create a new file under `src/PopulateFrontend/frontend-content/src` and name it `config.js`. Find you api URL...should look something like `https://gda9ee3hab.execute-api.us-west-2.amazonaws.com/development`. Add the following to the file
+2. `cd src/frontend` && `npm install`
+3. create a new file under `src/frontend/src` and name it `config.js`. Find you api URL...should look something like `https://gda9ee3hab.execute-api.us-west-2.amazonaws.com/development`. Add the following to the file
   ```
   export default {
-    backendAPI: [ your backend api url here ]
+    backendAPI: '[ your backend api url here ]'
   };
   ```
 4. `npm start`
