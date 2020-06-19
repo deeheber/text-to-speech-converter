@@ -40,7 +40,7 @@ Creates a new text to speech conversion
 ### Running the Frontend Locally against a Deployed Backend
 1. Deploy the app
 2. `cd src/frontend` && `npm install`
-3. create a new file under `src/frontend/src` and name it `config.js`. Find you api URL...should look something like `https://gda9ee3hab.execute-api.us-west-2.amazonaws.com/development`. Add the following to the file
+3. create a new file under `src/frontend/src` and name it `config.js`. Find you api URL...should look something like `https://6wpbpyxfgf.execute-api.us-east-1.amazonaws.com`. Add the following to the file
   ```
   export default {
     backendAPI: '[ your backend api url here ]'

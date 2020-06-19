@@ -369,8 +369,12 @@ Resources:
       CorsConfiguration:
         AllowOrigins:
           - !Sub http://${AWS::StackName}-frontend.s3-website-${AWS::Region}.amazonaws.com
+          - http://localhost:3000
         AllowMethods:
           - '*'
+        AllowHeaders:
+          - Authorization
+          - Content-Type
 Parameters:
   StackTagName:
     Type: String
