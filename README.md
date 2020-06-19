@@ -15,6 +15,7 @@ Deployed version [here](http://text-to-speech-converter-development-frontend.s3-
   - Lambda
   - DynamoDB
   - Polly
+  - CodeBuild
 - [Node](https://nodejs.org/en/)
 - [ReactJS](https://reactjs.org/)
 
@@ -27,11 +28,11 @@ Deployed version [here](http://text-to-speech-converter-development-frontend.s3-
 
 ### Running the Frontend Locally against a Deployed Backend
 1. Deploy the app
-2. `cd src/PopulateFrontend/frontend-content` && `npm install`
-3. create a new file under `src/PopulateFrontend/frontend-content/src` and name it `config.js`. Find you api URL...should look something like `https://gda9ee3hab.execute-api.us-west-2.amazonaws.com/development`. Add the following to the file
+2. `cd src/frontend` && `npm install`
+3. create a new file under `src/frontend/src` and name it `config.js`. Find you api URL...should look something like `https://gda9ee3hab.execute-api.us-west-2.amazonaws.com/development`. Add the following to the file
   ```
   export default {
-    backendAPI: [ your backend api url here ]
+    backendAPI: '[ your backend api url here ]'
   };
   ```
 4. `npm start`
