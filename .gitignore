@@ -6,3 +6,4 @@ node_modules
 
 # We want to dynamically generate this file on deploy
 src/frontend/src/config.js
+src/frontend/build
