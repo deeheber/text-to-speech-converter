@@ -21,20 +21,15 @@ exports.handler = async message => {
     */
     const sortedItems = Items.sort((a, b) => b.createdAt - a.createdAt);
     console.log('SORTED RESULTS FROM DB ', sortedItems);
-    response = { Items: sortedItems };
-    statusCode = 200;
+    response = JSON.stringify({ Items: sortedItems });
   } catch (err) {
     console.log('An error occurred scanning the table: ', err);
-    response = err.message;
     statusCode = err.statusCode || 500;
+    response = {
+      statusCode,
+      body: JSON.stringify(err.message)
+    };
   }
 
-  return {
-    statusCode,
-    headers: {
-      'Access-Control-Allow-Credentials': true,
-      'Access-Control-Allow-Origin': '*'
-    },
-    body: JSON.stringify(response)
-  };
+  return response;
 };

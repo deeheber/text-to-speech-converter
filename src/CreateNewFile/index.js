@@ -90,14 +90,7 @@ exports.handler = async message => {
 
     console.log('SUCCESS adding url to  DynamoDB: ', updateDynamo);
 
-    response = {
-      statusCode: 200,
-      headers: {
-        'Access-Control-Allow-Credentials': true,
-        'Access-Control-Allow-Origin': '*'
-      },
-      body: JSON.stringify(updateDynamo.Attributes)
-    };
+    response = JSON.stringify(updateDynamo.Attributes);
   } catch (err) {
     console.log('ERROR: ', err);
     console.log('Setting DynamoDB status to FAILED');
@@ -119,10 +112,6 @@ exports.handler = async message => {
 
     response = {
       statusCode: err.statusCode || 500,
-      headers: {
-        'Access-Control-Allow-Credentials': true,
-        'Access-Control-Allow-Origin': '*'
-      },
       body: JSON.stringify(err.message)
     };
   }

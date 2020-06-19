@@ -11,19 +11,14 @@ exports.handler = async message => {
     response = await polly.describeVoices({
       LanguageCode: 'en-US'
     }).promise();
-    statusCode = 200;
   } catch (err) {
     console.log(`AN ERROR OCURRED: ${JSON.stringify(err.message, undefined, 2)}`);
-    response = err.message;
     statusCode = err.statusCode || 500;
+    response = {
+      statusCode,
+      body: JSON.stringify(err.message)
+    };
   }
 
-  return {
-    statusCode,
-    headers: {
-      'Access-Control-Allow-Credentials': true,
-      'Access-Control-Allow-Origin': '*'
-    },
-    body: JSON.stringify(response)
-  };
+  return response;
 };

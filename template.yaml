@@ -1,49 +1,6 @@
 AWSTemplateFormatVersion: 2010-09-09
 Transform: AWS::Serverless-2016-10-31
 Resources:
-  Api:
-    Type: AWS::Serverless::Api
-    Properties:
-      Name: !Sub
-        - ${ResourceName} From Stack ${StackTagName} Environment ${EnvironmentTagName}
-        - ResourceName: Api
-      StageName: !Ref EnvironmentAPIGatewayStageName
-      DefinitionBody:
-        swagger: '2.0'
-        info: {}
-        paths:
-          /file:
-            get:
-              x-amazon-apigateway-integration:
-                httpMethod: POST
-                type: aws_proxy
-                uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ListFiles.Arn}/invocations
-              responses: {}
-            post:
-              x-amazon-apigateway-integration:
-                httpMethod: POST
-                type: aws_proxy
-                uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${CreateNewFile.Arn}/invocations
-              responses: {}
-          /file/{id}:
-            delete:
-              x-amazon-apigateway-integration:
-                httpMethod: POST
-                type: aws_proxy
-                uri: !Sub arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DeleteFile.Arn}/invocations
-              responses: {}
-          /voices:
-            get:
-              x-amazon-apigateway-integration:
-                httpMethod: POST
-                type: aws_proxy
-                uri: !Sub arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GetVoices.Arn}/invocations
-              responses: {}
-      EndpointConfiguration: REGIONAL
-      TracingEnabled: true
-      Cors:
-        AllowHeaders: '''Authorization,Content-Type'''
-        AllowOrigin: '''*'''
   Table:
     Type: AWS::DynamoDB::Table
     Properties:
@@ -105,19 +62,21 @@ Resources:
               Action:
                 - polly:SynthesizeSpeech
         - AWSXrayWriteOnlyAccess
-      Events:
-        ApiPOSTfile:
-          Type: Api
-          Properties:
-            Path: /file
-            Method: POST
-            RestApiId: !Ref Api
       Environment:
         Variables:
           TABLE_NAME: !Ref Table
           TABLE_ARN: !GetAtt Table.Arn
           BUCKET_NAME: !Ref FileStore
           BUCKET_ARN: !GetAtt FileStore.Arn
+      Events:
+        HttpApiPOSTfile:
+          Type: HttpApi
+          Properties:
+            Path: /file
+            Method: POST
+            ApiId: !Ref HttpApi
+            PayloadFormatVersion: '2.0'
+            TimeoutInMillis: 29000
   DeleteFile:
     Type: AWS::Serverless::Function
     Properties:
@@ -151,19 +110,21 @@ Resources:
                   - /*
               Action:
                 - s3:DeleteObject
-      Events:
-        ApiDELETEfileid:
-          Type: Api
-          Properties:
-            Path: /file/{id}
-            Method: DELETE
-            RestApiId: !Ref Api
       Environment:
         Variables:
           BUCKET_NAME: !Ref FileStore
           BUCKET_ARN: !GetAtt FileStore.Arn
           TABLE_NAME: !Ref Table
           TABLE_ARN: !GetAtt Table.Arn
+      Events:
+        HttpApiDELETEfileid:
+          Type: HttpApi
+          Properties:
+            Path: /file/{id}
+            Method: DELETE
+            ApiId: !Ref HttpApi
+            PayloadFormatVersion: '2.0'
+            TimeoutInMillis: 29000
   GetVoices:
     Type: AWS::Serverless::Function
     Properties:
@@ -186,12 +147,14 @@ Resources:
               Action:
                 - polly:DescribeVoices
       Events:
-        ApiGETvoices:
-          Type: Api
+        HttpApiGETvoices:
+          Type: HttpApi
           Properties:
             Path: /voices
             Method: GET
-            RestApiId: !Ref Api
+            ApiId: !Ref HttpApi
+            PayloadFormatVersion: '2.0'
+            TimeoutInMillis: 29000
   ListFiles:
     Type: AWS::Serverless::Function
     Properties:
@@ -214,17 +177,19 @@ Resources:
               Action:
                 - dynamodb:GetItem
                 - dynamodb:Scan
-      Events:
-        ApiGETfile:
-          Type: Api
-          Properties:
-            Path: /file
-            Method: GET
-            RestApiId: !Ref Api
       Environment:
         Variables:
           TABLE_NAME: !Ref Table
           TABLE_ARN: !GetAtt Table.Arn
+      Events:
+        HttpApiGETfile:
+          Type: HttpApi
+          Properties:
+            Path: /file
+            Method: GET
+            ApiId: !Ref HttpApi
+            PayloadFormatVersion: '2.0'
+            TimeoutInMillis: 29000
   Website:
     Type: AWS::CodeBuild::Project
     Metadata:
@@ -240,7 +205,7 @@ Resources:
         Type: LINUX_CONTAINER
         EnvironmentVariables:
           - Name: API_URL
-            Value: !Sub https://${Api}.execute-api.${AWS::Region}.amazonaws.com/${Api.Stage}
+            Value: !Sub https://${HttpApi}.execute-api.${AWS::Region}.amazonaws.com
       ServiceRole: !GetAtt WebsiteRole.Arn
       Source:
         Type: NO_SOURCE
@@ -380,6 +345,36 @@ Resources:
       Type: website
       ProjectName: !Ref Website
       SourceVersion: !Ref SourceVersion
+  HttpApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      DefinitionBody:
+        openapi: '3.0'
+        info:
+          title: !Sub ${AWS::StackName}-HttpApi
+          version: '1.0'
+        paths:
+          /voices:
+            get:
+              responses: {}
+          /file:
+            get:
+              responses: {}
+            post:
+              responses: {}
+          /file/{id}:
+            delete:
+              responses: {}
+      FailOnWarnings: true
+      CorsConfiguration:
+        AllowOrigins:
+          - !Sub http://${AWS::StackName}-frontend.s3-website-${AWS::Region}.amazonaws.com
+          - http://localhost:3000
+        AllowMethods:
+          - '*'
+        AllowHeaders:
+          - Authorization
+          - Content-Type
 Parameters:
   StackTagName:
     Type: String
@@ -387,9 +382,6 @@ Parameters:
   EnvironmentTagName:
     Type: String
     Description: Environment Name (injected by Stackery at deployment time)
-  EnvironmentAPIGatewayStageName:
-    Type: String
-    Description: Environment name used for API Gateway Stage names (injected by Stackery at deployment time)
   SourceLocation:
     Type: String
     Description: Location of source code for deployment (injected by Stackery at deployment time)
