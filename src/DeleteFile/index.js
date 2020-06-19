@@ -34,8 +34,7 @@ exports.handler = async message => {
     await dynamodb.delete(dynamoParams).promise();
     console.log(`SUCCESS DELETING ${Item.id} FROM DYNAMODB`);
 
-    statusCode = 200;
-    response = 'Success deleting item';
+    response = JSON.stringify('Success deleting item');
   } catch (err) {
     console.log(`AN ERROR OCURRED: ${JSON.stringify(err.message, undefined, 2)}`);
     statusCode = err.statusCode || 500;
@@ -43,11 +42,11 @@ exports.handler = async message => {
     if (err.message === 'An item with that id does not exist') {
       statusCode = 404;
     }
-    response = err.message;
+    response = {
+      statusCode,
+      body: JSON.stringify(err.message)
+    };
   }
 
-  return {
-    statusCode,
-    body: JSON.stringify(response)
-  };
+  return response;
 };

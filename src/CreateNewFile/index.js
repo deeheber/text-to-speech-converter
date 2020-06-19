@@ -110,7 +110,10 @@ exports.handler = async message => {
 
     console.log('Set DynamoDB to FAILED: ', failDynamo);
 
-    response = JSON.stringify(err.message);
+    response = {
+      statusCode: err.statusCode || 500,
+      body: JSON.stringify(err.message)
+    };
   }
 
   return response;
