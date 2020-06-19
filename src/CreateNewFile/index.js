@@ -90,10 +90,7 @@ exports.handler = async message => {
 
     console.log('SUCCESS adding url to  DynamoDB: ', updateDynamo);
 
-    response = {
-      statusCode: 200,
-      body: JSON.stringify(updateDynamo.Attributes)
-    };
+    response = JSON.stringify(updateDynamo.Attributes);
   } catch (err) {
     console.log('ERROR: ', err);
     console.log('Setting DynamoDB status to FAILED');
@@ -113,10 +110,7 @@ exports.handler = async message => {
 
     console.log('Set DynamoDB to FAILED: ', failDynamo);
 
-    response = {
-      statusCode: err.statusCode || 500,
-      body: JSON.stringify(err.message)
-    };
+    response = JSON.stringify(err.message);
   }
 
   return response;
