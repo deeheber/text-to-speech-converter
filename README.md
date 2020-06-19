@@ -24,6 +24,19 @@ Deployed version [here](http://text-to-speech-converter-development-frontend.s3-
 2. Import and deploy the stack via Stackery. Getting started directions [here](https://docs.stackery.io/docs/using-stackery/introduction/). TL;DR sign up for free account > create a stack and an environment > deploy.
 3. Navigate to the url for your frontend. Should be something like: `http://{stackery stack name}-{stackery environment name}-frontend.s3-website-us-west-2.amazonaws.com/`
 
+### Backend API Endpoints
+#### GET /voices
+Populates the voices dropdown list
+
+#### GET /file
+Gets all files and fills the table with existing text to speech conversations
+
+#### DELETE /file/{id}
+Deletes a file
+
+#### POST /file
+Creates a new text to speech conversion
+
 ### Running the Frontend Locally against a Deployed Backend
 1. Deploy the app
 2. `cd src/frontend` && `npm install`
