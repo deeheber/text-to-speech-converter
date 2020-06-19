@@ -19,8 +19,6 @@ Deployed version [here](http://text-to-speech-converter-development-frontend.s3-
 - [Node](https://nodejs.org/en/)
 - [ReactJS](https://reactjs.org/)
 
-![Setup](https://user-images.githubusercontent.com/12616554/68250664-38a60780-ffd6-11e9-9f25-c6a6aa9e5c09.png)
-
 ### Directions To Run
 1. Clone this repo
 2. Import and deploy the stack via Stackery. Getting started directions [here](https://docs.stackery.io/docs/using-stackery/introduction/). TL;DR sign up for free account > create a stack and an environment > deploy.
