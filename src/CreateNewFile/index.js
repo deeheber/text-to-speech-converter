@@ -92,10 +92,6 @@ exports.handler = async message => {
 
     response = {
       statusCode: 200,
-      headers: {
-        'Access-Control-Allow-Credentials': true,
-        'Access-Control-Allow-Origin': '*'
-      },
       body: JSON.stringify(updateDynamo.Attributes)
     };
   } catch (err) {
@@ -119,10 +115,6 @@ exports.handler = async message => {
 
     response = {
       statusCode: err.statusCode || 500,
-      headers: {
-        'Access-Control-Allow-Credentials': true,
-        'Access-Control-Allow-Origin': '*'
-      },
       body: JSON.stringify(err.message)
     };
   }
