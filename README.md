@@ -11,7 +11,7 @@ Deployed version [here](http://text-to-speech-converter-development-frontend.s3-
   - [AWS SAM](https://aws.amazon.com/serverless/sam/)
   - CloudFormation
   - S3
-  - API Gateway
+  - API Gateway (http api)
   - Lambda
   - DynamoDB
   - Polly
