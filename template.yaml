@@ -283,7 +283,7 @@ Resources:
             - !Ref Website
       Targets:
         - Arn: !Sub arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:stackery-agent-commander
-          Id: !Ref SourceVersion
+          Id: StackeryAgentCommander
   WebsiteEventsPermission:
     Type: AWS::Lambda::Permission
     DependsOn: WebsiteEvents
