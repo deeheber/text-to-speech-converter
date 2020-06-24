@@ -266,7 +266,6 @@ Resources:
     Type: AWS::Events::Rule
     DependsOn: Website
     Properties:
-      Name: !Sub ${SourceVersion}-stackerywebsite
       EventPattern:
         source:
           - aws.codebuild
