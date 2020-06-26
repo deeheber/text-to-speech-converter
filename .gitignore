@@ -3,6 +3,7 @@ node_modules
 .aws-sam
 .stackery
 .stackery-template.yaml
+event.json
 
 # We want to dynamically generate this file on deploy
 src/frontend/src/config.js

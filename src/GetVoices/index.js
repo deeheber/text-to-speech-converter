@@ -9,6 +9,7 @@ exports.handler = async message => {
 
   try {
     response = await polly.describeVoices({
+      Engine: 'standard',
       LanguageCode: 'en-US'
     }).promise();
   } catch (err) {
@@ -19,6 +20,6 @@ exports.handler = async message => {
       body: JSON.stringify(err.message)
     };
   }
-
+  console.log(response.Voices.length);
   return response;
 };
