@@ -247,6 +247,7 @@ Resources:
                   - ${BuildCommand}
               post_build:
                 commands:
+                  - if [ $CODEBUILD_BUILD_SUCCEEDING == 0 ]; then exit 1; fi
                   - |
                     _SOURCE_LOCATION=${SourceLocation}
                     if [ s3 != "${!_SOURCE_LOCATION%%:*}" ]; then
