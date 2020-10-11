@@ -2,6 +2,7 @@
   "name": "delete-file",
   "version": "1.0.0",
   "dependencies": {
-    "aws-sdk": "~2"
+    "aws-sdk": "~2",
+    "libhoney": "^2.2.1"
   }
 }

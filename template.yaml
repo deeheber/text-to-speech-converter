@@ -38,7 +38,7 @@ Resources:
       Timeout: 300
       Tracing: Active
       Policies:
-        - Version: 2012-10-17
+        - Version: 2012-10-17T00:00:00.000Z
           Statement:
             - Effect: Allow
               Resource: !Join
@@ -48,14 +48,14 @@ Resources:
               Action:
                 - s3:PutObject
                 - s3:PutObjectAcl
-        - Version: 2012-10-17
+        - Version: 2012-10-17T00:00:00.000Z
           Statement:
             - Effect: Allow
               Resource: !GetAtt Table.Arn
               Action:
                 - dynamodb:UpdateItem
                 - dynamodb:PutItem
-        - Version: 2012-10-17
+        - Version: 2012-10-17T00:00:00.000Z
           Statement:
             - Effect: Allow
               Resource: '*'
@@ -68,6 +68,7 @@ Resources:
           TABLE_ARN: !GetAtt Table.Arn
           BUCKET_NAME: !Ref FileStore
           BUCKET_ARN: !GetAtt FileStore.Arn
+          HONEYCOMB_KEY: !Ref EnvConfighoneycombAsString
       Events:
         HttpApiPOSTfile:
           Type: HttpApi
@@ -94,14 +95,14 @@ Resources:
         - AWSXrayWriteOnlyAccess
         - S3CrudPolicy:
             BucketName: !Ref FileStore
-        - Version: 2012-10-17
+        - Version: 2012-10-17T00:00:00.000Z
           Statement:
             - Effect: Allow
               Resource: !GetAtt Table.Arn
               Action:
                 - dynamodb:GetItem
                 - dynamodb:DeleteItem
-        - Version: 2012-10-17
+        - Version: 2012-10-17T00:00:00.000Z
           Statement:
             - Effect: Allow
               Resource: !Join
@@ -116,6 +117,7 @@ Resources:
           BUCKET_ARN: !GetAtt FileStore.Arn
           TABLE_NAME: !Ref Table
           TABLE_ARN: !GetAtt Table.Arn
+          HONEYCOMB_KEY: !Ref EnvConfighoneycombAsString
       Events:
         HttpApiDELETEfileid:
           Type: HttpApi
@@ -140,7 +142,7 @@ Resources:
       Tracing: Active
       Policies:
         - AWSXrayWriteOnlyAccess
-        - Version: 2012-10-17
+        - Version: 2012-10-17T00:00:00.000Z
           Statement:
             - Effect: Allow
               Resource: '*'
@@ -155,6 +157,9 @@ Resources:
             ApiId: !Ref HttpApi
             PayloadFormatVersion: '2.0'
             TimeoutInMillis: 29000
+      Environment:
+        Variables:
+          HONEYCOMB_KEY: !Ref EnvConfighoneycombAsString
   ListFiles:
     Type: AWS::Serverless::Function
     Properties:
@@ -170,7 +175,7 @@ Resources:
       Tracing: Active
       Policies:
         - AWSXrayWriteOnlyAccess
-        - Version: 2012-10-17
+        - Version: 2012-10-17T00:00:00.000Z
           Statement:
             - Effect: Allow
               Resource: !GetAtt Table.Arn
@@ -181,6 +186,7 @@ Resources:
         Variables:
           TABLE_NAME: !Ref Table
           TABLE_ARN: !GetAtt Table.Arn
+          HONEYCOMB_KEY: !Ref EnvConfighoneycombAsString
       Events:
         HttpApiGETfile:
           Type: HttpApi
@@ -387,3 +393,9 @@ Parameters:
   SourceVersion:
     Type: String
     Description: Source version for deployment (injected by Stackery at deployment time)
+  EnvConfighoneycombAsString:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /<EnvironmentName>/honeycomb
+Metadata:
+  EnvConfigParameters:
+    EnvConfighoneycombAsString: honeycomb

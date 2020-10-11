@@ -1,8 +1,15 @@
 const AWS = require('aws-sdk');
 const dynamodb = new AWS.DynamoDB.DocumentClient();
 
-exports.handler = async message => {
+const Libhoney = require('libhoney');
+const hny = new Libhoney({
+  writeKey: process.env.HONEYCOMB_KEY,
+  dataset: 'text-to-speech-converter'
+});
+
+exports.handler = async (message, context) => {
   console.log('Get file invoked with message: ', message);
+  const startTime = Date.now();
 
   let response;
   let statusCode;
@@ -30,6 +37,17 @@ exports.handler = async message => {
       body: JSON.stringify(err.message)
     };
   }
+
+  const ev = hny.newEvent();
+  ev.add({
+    message: 'Hello from ListFiles',
+    functionName: context.functionName,
+    functionVersion: context.functionVersion,
+    requestId: context.awsRequestId,
+    latencyMs: Date.now() - startTime,
+    didError: response.statusCode >= 400
+  });
+  ev.send();
 
   return response;
 };

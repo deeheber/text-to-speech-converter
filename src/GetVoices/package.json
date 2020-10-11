@@ -3,5 +3,8 @@
   "version": "1.0.0",
   "devDependencies": {
     "aws-sdk": "~2"
+  },
+  "dependencies": {
+    "libhoney": "^2.2.1"
   }
 }

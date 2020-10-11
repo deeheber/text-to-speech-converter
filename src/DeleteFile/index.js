@@ -2,10 +2,17 @@ const AWS = require('aws-sdk');
 const dynamodb = new AWS.DynamoDB.DocumentClient();
 const s3 = new AWS.S3();
 
-exports.handler = async message => {
+const Libhoney = require('libhoney');
+const hny = new Libhoney({
+  writeKey: process.env.HONEYCOMB_KEY,
+  dataset: 'text-to-speech-converter'
+});
+
+exports.handler = async (message, context) => {
   // Log the event argument for debugging and for use in local development.
   console.log(JSON.stringify(message, undefined, 2));
 
+  const startTime = Date.now();
   const id = message.pathParameters.id;
   let statusCode;
   let response;
@@ -47,6 +54,17 @@ exports.handler = async message => {
       body: JSON.stringify(err.message)
     };
   }
+
+  const ev = hny.newEvent();
+  ev.add({
+    message: 'Hello from DeleteFile',
+    functionName: context.functionName,
+    functionVersion: context.functionVersion,
+    requestId: context.awsRequestId,
+    latencyMs: Date.now() - startTime,
+    didError: response.statusCode >= 400
+  });
+  ev.send();
 
   return response;
 };

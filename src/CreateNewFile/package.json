@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "dependencies": {
     "aws-sdk": "~2",
+    "libhoney": "^2.2.1",
     "uuid": "^8"
   }
 }

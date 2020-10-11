@@ -10,7 +10,14 @@ const s3 = new AWS.S3();
 
 const chunkText = require('./chunkText');
 
-exports.handler = async message => {
+const Libhoney = require('libhoney');
+const hny = new Libhoney({
+  writeKey: process.env.HONEYCOMB_KEY,
+  dataset: 'text-to-speech-converter'
+});
+
+exports.handler = async (message, context) => {
+  const startTime = Date.now();
   console.log('CreateNewFile invoked  with  message: ', message);
 
   let response;
@@ -115,6 +122,17 @@ exports.handler = async message => {
       body: JSON.stringify(err.message)
     };
   }
+
+  const ev = hny.newEvent();
+  ev.add({
+    message: 'Hello from CreateNewFile',
+    functionName: context.functionName,
+    functionVersion: context.functionVersion,
+    requestId: context.awsRequestId,
+    latencyMs: Date.now() - startTime,
+    didError: response.statusCode >= 400
+  });
+  ev.send();
 
   return response;
 };
