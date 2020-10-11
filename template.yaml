@@ -38,7 +38,7 @@ Resources:
       Timeout: 300
       Tracing: Active
       Policies:
-        - Version: 2012-10-17T00:00:00.000Z
+        - Version: 2012-10-17
           Statement:
             - Effect: Allow
               Resource: !Join
@@ -48,14 +48,14 @@ Resources:
               Action:
                 - s3:PutObject
                 - s3:PutObjectAcl
-        - Version: 2012-10-17T00:00:00.000Z
+        - Version: 2012-10-17
           Statement:
             - Effect: Allow
               Resource: !GetAtt Table.Arn
               Action:
                 - dynamodb:UpdateItem
                 - dynamodb:PutItem
-        - Version: 2012-10-17T00:00:00.000Z
+        - Version: 2012-10-17
           Statement:
             - Effect: Allow
               Resource: '*'
@@ -95,14 +95,14 @@ Resources:
         - AWSXrayWriteOnlyAccess
         - S3CrudPolicy:
             BucketName: !Ref FileStore
-        - Version: 2012-10-17T00:00:00.000Z
+        - Version: 2012-10-17
           Statement:
             - Effect: Allow
               Resource: !GetAtt Table.Arn
               Action:
                 - dynamodb:GetItem
                 - dynamodb:DeleteItem
-        - Version: 2012-10-17T00:00:00.000Z
+        - Version: 2012-10-17
           Statement:
             - Effect: Allow
               Resource: !Join
@@ -142,7 +142,7 @@ Resources:
       Tracing: Active
       Policies:
         - AWSXrayWriteOnlyAccess
-        - Version: 2012-10-17T00:00:00.000Z
+        - Version: 2012-10-17
           Statement:
             - Effect: Allow
               Resource: '*'
@@ -175,7 +175,7 @@ Resources:
       Tracing: Active
       Policies:
         - AWSXrayWriteOnlyAccess
-        - Version: 2012-10-17T00:00:00.000Z
+        - Version: 2012-10-17
           Statement:
             - Effect: Allow
               Resource: !GetAtt Table.Arn
