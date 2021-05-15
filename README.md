@@ -22,7 +22,7 @@ Deployed version [here](http://text-to-speech-converter-prod-frontend.s3-website
 ### Directions To Run
 1. Clone this repo
 2. Import and deploy the stack via Stackery. Getting started directions [here](https://docs.stackery.io/docs/using-stackery/introduction/). TL;DR sign up for free account > create a stack and an environment > deploy.
-3. Navigate to the url for your frontend. Should be something like: `http://{stackery stack name}-{stackery environment name}-frontend.s3-website-us-west-2.amazonaws.com/`
+3. Navigate to the url for your frontend. Should be something like: `http://{your stackery stack name}-{your stackery environment name}-frontend.s3-website-{your region}.amazonaws.com/`
 
 ### Backend API Endpoints
 #### GET /voices
@@ -49,7 +49,7 @@ Creates a new text to speech conversion
 4. `npm start`
 
 ### Known Limitations For Larger Requests
-- Lambda has [limits](https://docs.aws.amazon.com/lambda/latest/dg/limits.html) for the `/tmp` directory storage.
+- Lambda has [limits](https://docs.aws.amazon.com/lambda/latest/dg/limits.html) for the `/tmp` directory storage. It's possible to [mount EFS to Lambda](https://docs.aws.amazon.com/lambda/latest/dg/services-efs.html), but that seems a bit over complicated and more $$$ than I'd like to spend a pet project.
 - Pagination is not in place for `ListFiles`, but you probably don't want to scan a very very large dynamoDB table and return all the results anyway bc it can get very $$$.
 
 ### Outstanding TODO Items / Open Bugs
