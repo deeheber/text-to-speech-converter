@@ -378,13 +378,13 @@ Resources:
 Parameters:
   StackTagName:
     Type: String
-    Description: Stack Name (injected by Stackery at deployment time)
+    Description: Stack Name
   EnvironmentTagName:
     Type: String
-    Description: Environment Name (injected by Stackery at deployment time)
+    Description: Environment Name
   SourceLocation:
     Type: String
-    Description: Location of source code for deployment (injected by Stackery at deployment time)
+    Description: Location of source code for deployment
   SourceVersion:
     Type: String
-    Description: Source version for deployment (injected by Stackery at deployment time)
+    Description: Source version for deployment
