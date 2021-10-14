@@ -192,8 +192,6 @@ Resources:
             TimeoutInMillis: 29000
   Website:
     Type: AWS::CodeBuild::Project
-    Metadata:
-      StackeryType: website
     DependsOn: WebsiteRole
     Properties:
       Name: !Sub ${AWS::StackName}-Website
@@ -261,8 +259,8 @@ Resources:
             SourceDirectory: src/frontend
             DestinationBucketName: !Ref FrontEnd
       Tags:
-        - Key: Stackery Project Type
-          Value: Website Builder
+        - Key: StackName
+          Value: ${AWS::StackName}
   WebsiteEvents:
     Type: AWS::Events::Rule
     DependsOn: Website
@@ -282,6 +280,7 @@ Resources:
           project-name:
             - !Ref Website
       Targets:
+        # TODO target WebsiteBuildTrigger function
         - Arn: !Sub arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:stackery-agent-commander
           Id: StackeryAgentCommander
   WebsiteEventsPermission:
@@ -289,6 +288,7 @@ Resources:
     DependsOn: WebsiteEvents
     Properties:
       Action: lambda:InvokeFunction
+      # TODO target WebsiteBuildTrigger function
       FunctionName: !Sub arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:stackery-agent-commander
       Principal: events.amazonaws.com
       SourceArn: !GetAtt WebsiteEvents.Arn
@@ -315,6 +315,7 @@ Resources:
                   - logs:PutLogEvents
                 Resource:
                   - !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/${AWS::StackName}-Website:log-stream:*
+        # TODO Replicate this policy (or remove it in the case of just allowing a non-S3 source location i.e. a Github URL to clone)
         - PolicyName: DownloadSourceFromStackeryAssetsBucket
           PolicyDocument:
             Version: 2012-10-17
@@ -337,14 +338,6 @@ Resources:
                 Resource:
                   - !Sub ${FrontEnd.Arn}/*
                   - !Sub ${FrontEnd.Arn}
-  WebsiteBuildTrigger:
-    Type: Custom::StackeryWebsiteBuildTrigger
-    DependsOn: WebsiteEvents
-    Properties:
-      ServiceToken: !Sub arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:stackery-agent-commander
-      Type: website
-      ProjectName: !Ref Website
-      SourceVersion: !Ref SourceVersion
   HttpApi:
     Type: AWS::Serverless::HttpApi
     Properties:
@@ -375,6 +368,29 @@ Resources:
         AllowHeaders:
           - Authorization
           - Content-Type
+  WebsiteBuildTrigger:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-WebsiteBuildTrigger
+      Description: !Sub
+        - Stack ${StackTagName} Environment ${EnvironmentTagName} Function ${ResourceName}
+        - ResourceName: WebsiteBuildTrigger
+      CodeUri: src/WebsiteBuildTrigger
+      Handler: index.handler
+      Runtime: nodejs14.x
+      MemorySize: 5000
+      Timeout: 30
+      Tracing: Active
+      Policies:
+        - AWSXrayWriteOnlyAccess
+  WebsiteBuildTriggerDeployTrigger:
+    Type: Custom::FunctionDeployTrigger
+    DependsOn: WebsiteEvents
+    Properties:
+      ServiceToken: !GetAtt WebsiteBuildTrigger.Arn
+      Type: website
+      ProjectName: !Ref Website
+      SourceVersion: !Ref SourceVersion
 Parameters:
   StackTagName:
     Type: String
