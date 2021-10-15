@@ -213,20 +213,11 @@ Resources:
             phases:
               install:
                 runtime-versions:
-                  nodejs: latest
-                  python: latest
-                  ruby: latest
+                  nodejs: 14.x
                 commands:
-                  - |
-                    _SOURCE_LOCATION=${SourceLocation}
-                    if [ s3 != "${!_SOURCE_LOCATION%%:*}" ]; then
-                      git clone ${SourceLocation} repo
-                      cd repo
-                      git checkout ${SourceVersion}
-                    else
-                      aws s3 cp ${SourceLocation} repo.tgz
-                      tar --strip-components 1 -xvvzf repo.tgz
-                    fi
+                  - git clone ${SourceLocation} repo
+                  - cd repo
+                  - git checkout ${SourceVersion}
                   - cd ${SourceDirectory}
               pre_build:
                 commands:
@@ -235,24 +226,13 @@ Resources:
                       npm install --production
                     elif [ -f yarn.lock -a -f package.json ]; then
                       yarn install --production
-                    elif [ -f requirements.txt ]; then
-                      pip install -r requirements.txt
-                    elif [ -f Gemfile ]; then
-                      bundle install
-                    fi
               build:
                 commands:
                   - ${BuildCommand}
               post_build:
                 commands:
                   - if [ $CODEBUILD_BUILD_SUCCEEDING == 0 ]; then exit 1; fi
-                  - |
-                    _SOURCE_LOCATION=${SourceLocation}
-                    if [ s3 != "${!_SOURCE_LOCATION%%:*}" ]; then
-                      cd "${!CODEBUILD_SRC_DIR}/repo"
-                    else
-                      cd ${!CODEBUILD_SRC_DIR}
-                    fi
+                  - cd "${!CODEBUILD_SRC_DIR}/repo"
                   - aws s3 sync '${PublishDirectory}' 's3://${DestinationBucketName}' --acl public-read --cache-control 'max-age=0, must-revalidate, public' --no-progress --delete
           - PublishDirectory: src/frontend/build
             BuildCommand: npm run production
@@ -280,16 +260,16 @@ Resources:
           project-name:
             - !Ref Website
       Targets:
-        # TODO target WebsiteBuildTrigger function
-        - Arn: !Sub arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:stackery-agent-commander
-          Id: StackeryAgentCommander
+      # TODO see this needs another DependsOn or just hardcode the arn
+        - Arn: !GetAtt WebsiteBuildTrigger.Arn
+          Id: WebsiteBuildTrigger
   WebsiteEventsPermission:
     Type: AWS::Lambda::Permission
     DependsOn: WebsiteEvents
     Properties:
       Action: lambda:InvokeFunction
-      # TODO target WebsiteBuildTrigger function
-      FunctionName: !Sub arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:stackery-agent-commander
+      # TODO see this needs another DependsOn or just hardcode the arn
+      FunctionName: !GetAtt WebsiteBuildTrigger.Arn
       Principal: events.amazonaws.com
       SourceArn: !GetAtt WebsiteEvents.Arn
   WebsiteRole:
@@ -315,14 +295,6 @@ Resources:
                   - logs:PutLogEvents
                 Resource:
                   - !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/${AWS::StackName}-Website:log-stream:*
-        # TODO Replicate this policy (or remove it in the case of just allowing a non-S3 source location i.e. a Github URL to clone)
-        - PolicyName: DownloadSourceFromStackeryAssetsBucket
-          PolicyDocument:
-            Version: 2012-10-17
-            Statement:
-              - Effect: Allow
-                Action: s3:GetObject
-                Resource: arn:aws:s3:::stackery-assetsbucket-*/*
         - PolicyName: UploadToDestinationObjectStore
           PolicyDocument:
             Version: 2012-10-17
@@ -383,6 +355,12 @@ Resources:
       Tracing: Active
       Policies:
         - AWSXrayWriteOnlyAccess
+        - Version: 2012-10-17
+          Statement:
+            - Effect: Allow
+              Resource: !GetAtt Website.Arn
+              Action:
+                - codebuild:StartBuild
   WebsiteBuildTriggerDeployTrigger:
     Type: Custom::FunctionDeployTrigger
     DependsOn: WebsiteEvents
@@ -400,7 +378,7 @@ Parameters:
     Description: Environment Name
   SourceLocation:
     Type: String
-    Description: Location of source code for deployment
+    Description: Location of source code for deployment (designed to work with public Github repos)
   SourceVersion:
     Type: String
-    Description: Source version for deployment
+    Description: Source version for deployment (i.e. Git SHA)

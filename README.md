@@ -12,14 +12,14 @@ Deployed version [here](http://text-to-speech-converter-prod-frontend.s3-website
   - [AWS SAM](https://aws.amazon.com/serverless/sam/)
   - CloudFormation
   - S3
-  - API Gateway (http api)
+  - API Gateway (HTTP API)
   - Lambda
   - DynamoDB
   - Polly
   - CodeBuild
 
 ### Directions To Run
-1. Clone this repo
+1. Clone this repo (note: this script is designed to work with public Github repos, it might possibly also work with public Bitbucket and public Gitlab repos, but it hasn't been tested)
 2. Deploy the stack via the AWS SAM CLI. Getting started directions [here](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-install.html).
 3. Navigate to the url for your frontend. Should be something like: `http://{your stack name}-{your environment name}-frontend.s3-website-{your region}.amazonaws.com/`
 

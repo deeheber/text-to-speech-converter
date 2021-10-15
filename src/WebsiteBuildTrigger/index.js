@@ -2,5 +2,9 @@ exports.handler = async (event, context) => {
   // Log the event argument for debugging and for use in local development.
   console.log(JSON.stringify(event, undefined, 2));
 
+  // TODO add code to handle
+  // EventBridge CodeBuild Events
+  // Custom resource trigger
+
   return {};
 };
