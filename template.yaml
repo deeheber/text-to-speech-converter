@@ -192,8 +192,6 @@ Resources:
             TimeoutInMillis: 29000
   Website:
     Type: AWS::CodeBuild::Project
-    Metadata:
-      StackeryType: website
     DependsOn: WebsiteRole
     Properties:
       Name: !Sub ${AWS::StackName}-Website
@@ -201,7 +199,7 @@ Resources:
         Type: NO_ARTIFACTS
       Environment:
         ComputeType: BUILD_GENERAL1_SMALL
-        Image: aws/codebuild/amazonlinux2-x86_64-standard:3.0
+        Image: aws/codebuild/standard:5.0
         Type: LINUX_CONTAINER
         EnvironmentVariables:
           - Name: API_URL
@@ -215,20 +213,11 @@ Resources:
             phases:
               install:
                 runtime-versions:
-                  nodejs: latest
-                  python: latest
-                  ruby: latest
+                  nodejs: 14
                 commands:
-                  - |
-                    _SOURCE_LOCATION=${SourceLocation}
-                    if [ s3 != "${!_SOURCE_LOCATION%%:*}" ]; then
-                      git clone ${SourceLocation} repo
-                      cd repo
-                      git checkout ${SourceVersion}
-                    else
-                      aws s3 cp ${SourceLocation} repo.tgz
-                      tar --strip-components 1 -xvvzf repo.tgz
-                    fi
+                  - git clone ${SourceLocation} repo
+                  - cd repo
+                  - git checkout ${SourceVersion}
                   - cd ${SourceDirectory}
               pre_build:
                 commands:
@@ -237,10 +226,6 @@ Resources:
                       npm install --production
                     elif [ -f yarn.lock -a -f package.json ]; then
                       yarn install --production
-                    elif [ -f requirements.txt ]; then
-                      pip install -r requirements.txt
-                    elif [ -f Gemfile ]; then
-                      bundle install
                     fi
               build:
                 commands:
@@ -248,21 +233,15 @@ Resources:
               post_build:
                 commands:
                   - if [ $CODEBUILD_BUILD_SUCCEEDING == 0 ]; then exit 1; fi
-                  - |
-                    _SOURCE_LOCATION=${SourceLocation}
-                    if [ s3 != "${!_SOURCE_LOCATION%%:*}" ]; then
-                      cd "${!CODEBUILD_SRC_DIR}/repo"
-                    else
-                      cd ${!CODEBUILD_SRC_DIR}
-                    fi
+                  - cd "${!CODEBUILD_SRC_DIR}/repo"
                   - aws s3 sync '${PublishDirectory}' 's3://${DestinationBucketName}' --acl public-read --cache-control 'max-age=0, must-revalidate, public' --no-progress --delete
           - PublishDirectory: src/frontend/build
             BuildCommand: npm run production
             SourceDirectory: src/frontend
             DestinationBucketName: !Ref FrontEnd
       Tags:
-        - Key: Stackery Project Type
-          Value: Website Builder
+        - Key: StackName
+          Value: !Sub ${AWS::StackName}
   WebsiteEvents:
     Type: AWS::Events::Rule
     DependsOn: Website
@@ -282,14 +261,14 @@ Resources:
           project-name:
             - !Ref Website
       Targets:
-        - Arn: !Sub arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:stackery-agent-commander
-          Id: StackeryAgentCommander
+        - Arn: !GetAtt WebsiteBuildTrigger.Arn
+          Id: WebsiteBuildTrigger
   WebsiteEventsPermission:
     Type: AWS::Lambda::Permission
     DependsOn: WebsiteEvents
     Properties:
       Action: lambda:InvokeFunction
-      FunctionName: !Sub arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:stackery-agent-commander
+      FunctionName: !GetAtt WebsiteBuildTrigger.Arn
       Principal: events.amazonaws.com
       SourceArn: !GetAtt WebsiteEvents.Arn
   WebsiteRole:
@@ -315,13 +294,6 @@ Resources:
                   - logs:PutLogEvents
                 Resource:
                   - !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/${AWS::StackName}-Website:log-stream:*
-        - PolicyName: DownloadSourceFromStackeryAssetsBucket
-          PolicyDocument:
-            Version: 2012-10-17
-            Statement:
-              - Effect: Allow
-                Action: s3:GetObject
-                Resource: arn:aws:s3:::stackery-assetsbucket-*/*
         - PolicyName: UploadToDestinationObjectStore
           PolicyDocument:
             Version: 2012-10-17
@@ -337,14 +309,6 @@ Resources:
                 Resource:
                   - !Sub ${FrontEnd.Arn}/*
                   - !Sub ${FrontEnd.Arn}
-  WebsiteBuildTrigger:
-    Type: Custom::StackeryWebsiteBuildTrigger
-    DependsOn: WebsiteEvents
-    Properties:
-      ServiceToken: !Sub arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:stackery-agent-commander
-      Type: website
-      ProjectName: !Ref Website
-      SourceVersion: !Ref SourceVersion
   HttpApi:
     Type: AWS::Serverless::HttpApi
     Properties:
@@ -375,16 +339,46 @@ Resources:
         AllowHeaders:
           - Authorization
           - Content-Type
+  WebsiteBuildTrigger:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-WebsiteBuildTrigger
+      Description: !Sub
+        - Stack ${StackTagName} Environment ${EnvironmentTagName} Function ${ResourceName}
+        - ResourceName: WebsiteBuildTrigger
+      CodeUri: src/WebsiteBuildTrigger
+      Handler: index.handler
+      Runtime: nodejs14.x
+      MemorySize: 5000
+      Timeout: 30
+      Tracing: Active
+      Policies:
+        - AWSXrayWriteOnlyAccess
+        - Version: 2012-10-17
+          Statement:
+            - Effect: Allow
+              Resource: !GetAtt Website.Arn
+              Action:
+                - codebuild:StartBuild
+  WebsiteBuildTriggerDeployTrigger:
+    Type: Custom::FunctionDeployTrigger
+    DependsOn: WebsiteEvents
+    Properties:
+      ServiceToken: !GetAtt WebsiteBuildTrigger.Arn
+      Type: website
+      ProjectName: !Ref Website
+      SourceVersion: !Ref SourceVersion
 Parameters:
   StackTagName:
     Type: String
-    Description: Stack Name (injected by Stackery at deployment time)
+    Description: Stack Name
   EnvironmentTagName:
     Type: String
-    Description: Environment Name (injected by Stackery at deployment time)
+    Description: Environment Name
   SourceLocation:
     Type: String
-    Description: Location of source code for deployment (injected by Stackery at deployment time)
+    Description: Location of source code for deployment (designed to work with public Github repos)
+    Default: https://github.com/deeheber/text-to-speech-converter.git
   SourceVersion:
     Type: String
-    Description: Source version for deployment (injected by Stackery at deployment time)
+    Description: Source version for deployment (i.e. Git SHA)
