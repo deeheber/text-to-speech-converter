@@ -261,7 +261,6 @@ Resources:
           project-name:
             - !Ref Website
       Targets:
-      # TODO see this needs another DependsOn or just hardcode the arn
         - Arn: !GetAtt WebsiteBuildTrigger.Arn
           Id: WebsiteBuildTrigger
   WebsiteEventsPermission:
@@ -269,7 +268,6 @@ Resources:
     DependsOn: WebsiteEvents
     Properties:
       Action: lambda:InvokeFunction
-      # TODO see this needs another DependsOn or just hardcode the arn
       FunctionName: !GetAtt WebsiteBuildTrigger.Arn
       Principal: events.amazonaws.com
       SourceArn: !GetAtt WebsiteEvents.Arn
