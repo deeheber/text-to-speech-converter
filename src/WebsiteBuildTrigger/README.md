@@ -4,3 +4,6 @@ This function is a custom resource that is triggered by CloudFormation on every 
 ## Entry Points
 - Custom resource triggered by CloudFormation
 - EventBridge event from the CodeBuild job notifying if the build succeeded
+
+## Notes
+The [recommended cfn-response module](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cfn-lambda-function-code-cfnresponsemodule.html) up on npm wasn't working for me, so I created my own `sendProvisionResponse.js` file that does what the module should be doing. Sigh, #awswishlist for a working module.

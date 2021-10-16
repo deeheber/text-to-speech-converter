@@ -3,7 +3,7 @@
 ## Summary
 This is an application that takes in text and outputs an audio file of that text. Written with US-English in mind, so it might not convert as expected for other languages.
 
-Deployed version [here](http://text-to-speech-converter-prod-frontend.s3-website-us-west-2.amazonaws.com/). Feel free to add your own things to convert to audio, download files, and delete files.
+Deployed version [here](http://text-to-speech-frontend.s3-website-us-west-2.amazonaws.com/). Feel free to add your own things to convert to audio, download files, and delete files.
 
 ### Technologies Used
 - [Node](https://nodejs.org/)
@@ -21,7 +21,7 @@ Deployed version [here](http://text-to-speech-converter-prod-frontend.s3-website
 ### Directions To Run
 1. Clone this repo (note: this script is designed to work with public Github repos, it might possibly also work with public Bitbucket and public Gitlab repos, but it hasn't been tested)
 2. Deploy the stack via the AWS SAM CLI. Getting started directions [here](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-install.html).
-3. Navigate to the url for your frontend. Should be something like: `http://{your stack name}-{your environment name}-frontend.s3-website-{your region}.amazonaws.com/`
+3. Navigate to the url for your frontend. Should be something like: `http://{your stack name}-frontend.s3-website-{your region}.amazonaws.com/`
 
 ### Backend API Endpoints
 #### GET /voices

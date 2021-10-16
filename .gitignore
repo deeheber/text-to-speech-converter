@@ -4,6 +4,7 @@ node_modules
 .stackery
 .stackery-template.yaml
 event.json
+samconfig.toml
 
 # We want to dynamically generate this file on deploy
 src/frontend/src/config.js

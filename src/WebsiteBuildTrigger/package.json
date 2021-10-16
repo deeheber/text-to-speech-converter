@@ -3,8 +3,5 @@
   "version": "1.0.0",
   "devDependencies": {
     "aws-sdk": "~2"
-  },
-  "dependencies": {
-    "cfn-response": "^1.0.1"
   }
 }

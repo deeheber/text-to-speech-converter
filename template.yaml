@@ -199,7 +199,7 @@ Resources:
         Type: NO_ARTIFACTS
       Environment:
         ComputeType: BUILD_GENERAL1_SMALL
-        Image: aws/codebuild/amazonlinux2-x86_64-standard:3.0
+        Image: aws/codebuild/standard:5.0
         Type: LINUX_CONTAINER
         EnvironmentVariables:
           - Name: API_URL
@@ -213,7 +213,7 @@ Resources:
             phases:
               install:
                 runtime-versions:
-                  nodejs: 14.x
+                  nodejs: 14
                 commands:
                   - git clone ${SourceLocation} repo
                   - cd repo
@@ -226,6 +226,7 @@ Resources:
                       npm install --production
                     elif [ -f yarn.lock -a -f package.json ]; then
                       yarn install --production
+                    fi
               build:
                 commands:
                   - ${BuildCommand}
@@ -240,7 +241,7 @@ Resources:
             DestinationBucketName: !Ref FrontEnd
       Tags:
         - Key: StackName
-          Value: ${AWS::StackName}
+          Value: !Sub ${AWS::StackName}
   WebsiteEvents:
     Type: AWS::Events::Rule
     DependsOn: Website
@@ -379,6 +380,7 @@ Parameters:
   SourceLocation:
     Type: String
     Description: Location of source code for deployment (designed to work with public Github repos)
+    Default: https://github.com/deeheber/text-to-speech-converter.git
   SourceVersion:
     Type: String
     Description: Source version for deployment (i.e. Git SHA)

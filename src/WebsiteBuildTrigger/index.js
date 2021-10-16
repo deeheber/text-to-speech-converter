@@ -1,5 +1,5 @@
 const AWS = require('aws-sdk');
-const { sendSuccess, sendFailure } = require('cfn-response');
+const sendProvisionResponse = require('./sendProvisionResponse');
 
 exports.handler = async event => {
   console.log(JSON.stringify(event, undefined, 2));
@@ -18,23 +18,24 @@ exports.handler = async event => {
     console.log('To forcibly fail this provision, execute this cURL command:');
     console.log(`curl -X PUT '${event.ResponseURL}' -H 'Content-Type:' -d '${JSON.stringify(failureResponse)}'`);
 
-    switch (message.RequestType) {
+    switch (event.RequestType) {
       case 'Create':
       case 'Update':
         return startCodeBuild(event);
   
       case 'Delete':
-        return sendSuccess('WebsiteBuildTrigger', {}, event);
+        return sendProvisionResponse(event.PhysicalResourceId, null, 'SUCCESS', event);
   
       default:
-        return sendFailure(`Invalid CloudFormation custom resource RequestType '${message.RequestType}'`, event);
+        console.log(`Unhandled event.RequestType: ${event.RequestType}, manually cancel using curl command above`);
+        return;
     }
   } else if (event.source === 'aws.codebuild') {
     // EventBridge CodeBuild Events
     return handleCodeBuildEvent(event);
   } else {
     // Unhandled Lambda invoke event (should not happen, but here just in case)
-    return sendFailure(`Invalid event type '${JSON.stringify(event, undefined, 2)}'`, event);
+    console.log(`Invalid event type '${JSON.stringify(event, undefined, 2)}'`);
   }
 };
 
@@ -68,7 +69,9 @@ const startCodeBuild = async message => {
       ]
     }).promise();
   } catch (err) {
-    return sendFailure(`Failed to start CodeBuild project: ${err.message}`, message);
+    const msg = `Failed to start CodeBuild project: ${err.message}`;
+    console.log(msg);
+    return sendProvisionResponse(message.PhysicalResourceId || 'resource', null, 'FAILED', message, msg);
   }
 };
 
@@ -81,7 +84,6 @@ const handleCodeBuildEvent = async message => {
   // Organize env vars in a more consumable format
   const environmentVariables = detail['additional-information'].environment['environment-variables'];
   const map = {};
-
   for (let i = 0; i < environmentVariables.length; i++) {
     const item = environmentVariables[i];
     const name = item.name;
@@ -101,18 +103,18 @@ const handleCodeBuildEvent = async message => {
   try {
     if (!map.CFN_RESPONSE_URL || !map.CFN_STACK_ID || !map.CFN_LOGICAL_ID || !map.CFN_REQUEST_ID) {
       missingCFParams = true;
-      throw new Error(`Missing Cloudformation params: ${JSON.stringify(body, null, 2)}`);
+      throw new Error('Missing Cloudformation params, can\'t send response to CF.');
     }
 
     switch (detail['build-status']) {
       case 'SUCCEEDED':
-        return sendSuccess('WebsiteBuildTrigger', {}, message);
+        return sendProvisionResponse(map.SOURCE_VERSION, null, 'SUCCESS', body);
 
       case 'FAULT':
       case 'TIMED_OUT':
       case 'FAILED':
       case 'STOPPED':
-        return sendFailure(`Failed to publish site, see ${consoleLink}`, message);
+        return sendProvisionResponse(map.SOURCE_VERSION, null, 'FAILED', body, `Failed to publish site, see ${consoleLink}`);
       default:
         throw new Error(`Unrecognized build status: ${detail['build-status']}`);
     }
@@ -123,7 +125,13 @@ const handleCodeBuildEvent = async message => {
       // CFParams are missing, so we can't talk to CloudFormation anyway. Ignore.
       return;
     } else {
-      return sendFailure(error.message, message);
+      return sendProvisionResponse(
+        map.SOURCE_VERSION || 'resource',
+        null,
+        'FAILED',
+        body,
+        error.message
+      );
     }
   }
 };
