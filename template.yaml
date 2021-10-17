@@ -29,7 +29,7 @@ Resources:
     Properties:
       FunctionName: !Sub ${AWS::StackName}-CreateNewFile
       Description: !Sub
-        - Stack ${StackTagName} Environment ${EnvironmentTagName} Function ${ResourceName}
+        - Stack ${AWS::StackName} Function ${ResourceName}
         - ResourceName: CreateNewFile
       CodeUri: src/CreateNewFile
       Handler: index.handler
@@ -82,7 +82,7 @@ Resources:
     Properties:
       FunctionName: !Sub ${AWS::StackName}-DeleteFile
       Description: !Sub
-        - Stack ${StackTagName} Environment ${EnvironmentTagName} Function ${ResourceName}
+        - Stack ${AWS::StackName} Function ${ResourceName}
         - ResourceName: DeleteFile
       CodeUri: src/DeleteFile
       Handler: index.handler
@@ -130,7 +130,7 @@ Resources:
     Properties:
       FunctionName: !Sub ${AWS::StackName}-GetVoices
       Description: !Sub
-        - Stack ${StackTagName} Environment ${EnvironmentTagName} Function ${ResourceName}
+        - Stack ${AWS::StackName} Function ${ResourceName}
         - ResourceName: GetVoices
       CodeUri: src/GetVoices
       Handler: index.handler
@@ -160,7 +160,7 @@ Resources:
     Properties:
       FunctionName: !Sub ${AWS::StackName}-ListFiles
       Description: !Sub
-        - Stack ${StackTagName} Environment ${EnvironmentTagName} Function ${ResourceName}
+        - Stack ${AWS::StackName} Function ${ResourceName}
         - ResourceName: ListFiles
       CodeUri: src/ListFiles
       Handler: index.handler
@@ -344,7 +344,7 @@ Resources:
     Properties:
       FunctionName: !Sub ${AWS::StackName}-WebsiteBuildTrigger
       Description: !Sub
-        - Stack ${StackTagName} Environment ${EnvironmentTagName} Function ${ResourceName}
+        - Stack ${AWS::StackName} Function ${ResourceName}
         - ResourceName: WebsiteBuildTrigger
       CodeUri: src/WebsiteBuildTrigger
       Handler: index.handler
@@ -369,12 +369,6 @@ Resources:
       ProjectName: !Ref Website
       SourceVersion: !Ref SourceVersion
 Parameters:
-  StackTagName:
-    Type: String
-    Description: Stack Name
-  EnvironmentTagName:
-    Type: String
-    Description: Environment Name
   SourceLocation:
     Type: String
     Description: Location of source code for deployment (designed to work with public Github repos)
