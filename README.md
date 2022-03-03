@@ -18,9 +18,14 @@ Deployed version [here](http://text-to-speech-frontend.s3-website-us-west-2.amaz
   - Polly
   - CodeBuild
 
+### Architecture Diagram
+
+![text-to-speech-architecture](https://user-images.githubusercontent.com/12616554/156626768-d509d604-b52f-42e5-9600-e8b2fe588ca7.png)
+
+
 ### Directions To Run
 1. Clone this repo (note: this script is designed to work with public Github repos, it might possibly also work with public Bitbucket and public Gitlab repos, but it hasn't been tested)
-2. Deploy the stack via the AWS SAM CLI. Getting started directions [here](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-install.html).
+2. Deploy the stack via the AWS SAM CLI. Getting started directions [here](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-install.html). TL;DR run [`sam build`](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-cli-command-reference-sam-build.html) and [`sam deploy --guided`](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-cli-command-reference-sam-deploy.html).
 3. Navigate to the url for your frontend. Should be something like: `http://{your stack name}-frontend.s3-website-{your region}.amazonaws.com/`
 
 ### Backend API Endpoints
