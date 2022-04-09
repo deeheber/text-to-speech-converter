@@ -376,3 +376,10 @@ Parameters:
   SourceVersion:
     Type: String
     Description: Source version for deployment (i.e. Git SHA)
+Outputs:
+  ApiURL:
+    Description: The URL for the API
+    Value: !Sub https://${HttpApi}.execute-api.${AWS::Region}.amazonaws.com
+  FrontendURL:
+    Description: The URL of the S3 bucket containing the built frontend
+    Value: !GetAtt FrontEnd.WebsiteURL
