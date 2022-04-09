@@ -31,6 +31,8 @@ Resources:
       Description: !Sub
         - Stack ${AWS::StackName} Function ${ResourceName}
         - ResourceName: CreateNewFile
+      Architectures:
+        - arm64
       CodeUri: src/CreateNewFile
       Handler: index.handler
       Runtime: nodejs14.x
@@ -84,6 +86,8 @@ Resources:
       Description: !Sub
         - Stack ${AWS::StackName} Function ${ResourceName}
         - ResourceName: DeleteFile
+      Architectures:
+        - arm64
       CodeUri: src/DeleteFile
       Handler: index.handler
       Runtime: nodejs14.x
@@ -132,6 +136,8 @@ Resources:
       Description: !Sub
         - Stack ${AWS::StackName} Function ${ResourceName}
         - ResourceName: GetVoices
+      Architectures:
+        - arm64
       CodeUri: src/GetVoices
       Handler: index.handler
       Runtime: nodejs14.x
@@ -162,6 +168,8 @@ Resources:
       Description: !Sub
         - Stack ${AWS::StackName} Function ${ResourceName}
         - ResourceName: ListFiles
+      Architectures:
+        - arm64
       CodeUri: src/ListFiles
       Handler: index.handler
       Runtime: nodejs14.x
@@ -346,6 +354,8 @@ Resources:
       Description: !Sub
         - Stack ${AWS::StackName} Function ${ResourceName}
         - ResourceName: WebsiteBuildTrigger
+      Architectures:
+        - arm64
       CodeUri: src/WebsiteBuildTrigger
       Handler: index.handler
       Runtime: nodejs14.x
