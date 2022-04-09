@@ -53,7 +53,7 @@ Creates a new text to speech conversion
 4. `npm start`
 
 ### Known Limitations For Larger Requests
-- Lambda has [limits](https://docs.aws.amazon.com/lambda/latest/dg/limits.html) for the `/tmp` directory storage. It's possible to [mount EFS to Lambda](https://docs.aws.amazon.com/lambda/latest/dg/services-efs.html), but that seems a bit over complicated and more $$$ than I'd like to spend a pet project.
+- Lambda has [limits](https://docs.aws.amazon.com/lambda/latest/dg/limits.html) for the `/tmp` directory storage. Currently the template is set to the default value which is 512mb. For an extra cost, you can up this value by adding the [EphemeralStorage](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-resource-function.html#sam-function-ephemeralstorage) property with the storage value that you want to the `CreateNewFile` function.
 - Pagination is not in place for `ListFiles`, but you probably don't want to scan a very very large dynamoDB table and return all the results anyway bc it can get very $$$.
 
 ### Outstanding TODO Items / Open Bugs
