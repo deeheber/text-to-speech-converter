@@ -1,20 +1,19 @@
-const { v4: uuidv4 } = require('uuid');
-const fs = require('fs');
-const promisify = require('util').promisify;
-const writeFilePromise = promisify(fs.writeFile);
+import { randomUUID } from 'crypto';
+import * as fs from 'fs';
+import { writeFile } from 'fs/promises';
 
-const AWS = require('aws-sdk');
-const dynamodb = new AWS.DynamoDB.DocumentClient();
-const polly = new AWS.Polly();
-const s3 = new AWS.S3();
+import { DynamoDB, Polly, S3 } from 'aws-sdk';
+const dynamodb = new DynamoDB.DocumentClient();
+const polly = new Polly();
+const s3 = new S3();
 
-const chunkText = require('./chunkText');
+import { chunkText } from './chunkText';
 
-exports.handler = async message => {
+export const handler = async (message) => {
   console.log('CreateNewFile invoked  with  message: ', message);
 
   let response;
-  const id = uuidv4();
+  const id = randomUUID();
   const createdAt = Date.now();
 
   try {
@@ -57,9 +56,9 @@ exports.handler = async message => {
       console.log('SUCCESS converting text chunk to audio: ', pollyFile);
 
       const flag = i === 0 ? 'w' : 'a';
-      const writeFile = await writeFilePromise(`/tmp/${id}.mp3`, pollyFile.AudioStream, { flag });
+      const writtenFile = await writeFile(`/tmp/${id}.mp3`, pollyFile.AudioStream, { flag });
 
-      console.log('SUCCESS writing file chunk: ', writeFile);
+      console.log('SUCCESS writing file chunk: ', writtenFile);
     }
 
     console.log('SUCCESS writing all text chunk to /tmp');

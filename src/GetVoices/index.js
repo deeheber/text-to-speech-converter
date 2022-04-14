@@ -1,7 +1,7 @@
-const AWS = require('aws-sdk');
-const polly = new AWS.Polly();
+import { Polly } from 'aws-sdk';
+const polly = new Polly();
 
-exports.handler = async message => {
+export const handler = async message => {
   // Log the event argument for debugging and for use in local development.
   console.log(JSON.stringify(message, undefined, 2));
   let response;

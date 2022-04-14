@@ -1,8 +1,8 @@
 {
   "name": "create-new-file",
+  "type": "module",
   "version": "1.0.0",
   "dependencies": {
-    "aws-sdk": "~2",
-    "uuid": "^8"
+    "aws-sdk": "~2"
   }
 }

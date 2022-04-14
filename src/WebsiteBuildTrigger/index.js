@@ -1,7 +1,7 @@
-const AWS = require('aws-sdk');
-const sendProvisionResponse = require('./sendProvisionResponse');
+import { CodeBuild } from 'aws-sdk';
+import { sendProvisionResponse } from './sendProvisionResponse';
 
-exports.handler = async event => {
+export const handler = async event => {
   console.log(JSON.stringify(event, undefined, 2));
 
   if (event.RequestType) {
@@ -40,7 +40,7 @@ exports.handler = async event => {
 };
 
 const startCodeBuild = async message => {
-  const codebuild = new AWS.CodeBuild();
+  const codebuild = CodeBuild();
 
   try {
     await codebuild.startBuild({
