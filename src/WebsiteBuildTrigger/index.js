@@ -1,6 +1,6 @@
 import { CodeBuildClient, StartBuildCommand } from "@aws-sdk/client-codebuild";
 
-import { sendProvisionResponse } from './sendProvisionResponse';
+import { sendProvisionResponse } from './sendProvisionResponse.mjs';
 
 export const handler = async event => {
   console.log(JSON.stringify(event, undefined, 2));
