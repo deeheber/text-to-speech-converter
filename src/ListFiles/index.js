@@ -1,5 +1,6 @@
 import AWS from 'aws-sdk';
-const dynamodb = new AWS.DynamoDB.DocumentClient();
+import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
+import { DynamoDBDocumentClient, ScanCommand } from "@aws-sdk/lib-dynamodb";
 
 export const handler = async message => {
   console.log('Get file invoked with message: ', message);
@@ -13,8 +14,10 @@ export const handler = async message => {
   };
 
   try {
+    const dyanmodbClient = new DynamoDBClient({ region: process.env.AWS_REGION });
+    const ddbDocClient = DynamoDBDocumentClient.from(dyanmodbClient);
     /* TODO: add looping with `ExclusiveStartKey` and `LastEvaluatedKey` for larger tables */
-    const { Items } = await dynamodb.scan(listParams).promise();
+    const { Items } = await ddbDocClient.send(new ScanCommand(listParams));
     console.log('ORIGINAL RESULTS FROM DB ', Items);
     /* TODO: Figure out if there's a way to sort scan results from dynamo
     * Initial search showed this may not be an option and/or is hard to implement

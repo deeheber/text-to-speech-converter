@@ -1,6 +1,4 @@
-import AWS from 'aws-sdk';
-
-const polly = new AWS.Polly();
+import { PollyClient, DescribeVoicesCommand } from "@aws-sdk/client-polly";
 
 export const handler = async message => {
   // Log the event argument for debugging and for use in local development.
@@ -9,10 +7,12 @@ export const handler = async message => {
   let statusCode;
 
   try {
-    response = await polly.describeVoices({
+    const client = new PollyClient({ region: process.env.AWS_REGION });
+    const command = new DescribeVoicesCommand({
       Engine: 'standard',
       LanguageCode: 'en-US'
-    }).promise();
+    });
+    response = await client.send(command);
   } catch (err) {
     console.log(`AN ERROR OCURRED: ${JSON.stringify(err.message, undefined, 2)}`);
     statusCode = err.statusCode || 500;
