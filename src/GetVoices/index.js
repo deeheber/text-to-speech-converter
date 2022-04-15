@@ -1,4 +1,5 @@
-import { Polly } from 'aws-sdk';
+import Polly from 'aws-sdk/clients/polly';
+
 const polly = new Polly();
 
 export const handler = async message => {

@@ -1,4 +1,4 @@
-import { CodeBuild } from 'aws-sdk';
+import CodeBuild from 'aws-sdk/clients/codebuild';
 import { sendProvisionResponse } from './sendProvisionResponse';
 
 export const handler = async event => {

@@ -1,4 +1,5 @@
-import { DynamoDB, S3 } from 'aws-sdk';
+import DynamoDB from 'aws-sdk/clients/dynamodb';
+import S3 from 'aws-sdk/clients/s3';
 const dynamodb = new DynamoDB.DocumentClient();
 const s3 = new S3();
 

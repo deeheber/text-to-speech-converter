@@ -1,4 +1,4 @@
-import { DynamoDB } from 'aws-sdk';
+import DynamoDB from 'aws-sdk/clients/dynamodb';
 const dynamodb = new DynamoDB.DocumentClient();
 
 export const handler = async message => {
