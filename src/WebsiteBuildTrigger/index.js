@@ -1,4 +1,5 @@
-import AWS from 'aws-sdk';
+import { CodeBuildClient, StartBuildCommand } from "@aws-sdk/client-codebuild";
+
 import { sendProvisionResponse } from './sendProvisionResponse';
 
 export const handler = async event => {
@@ -21,7 +22,7 @@ export const handler = async event => {
     switch (event.RequestType) {
       case 'Create':
       case 'Update':
-        return AWS.startCodeBuild(event);
+        return startCodeBuild(event);
   
       case 'Delete':
         return sendProvisionResponse(event.PhysicalResourceId, null, 'SUCCESS', event);
@@ -40,10 +41,8 @@ export const handler = async event => {
 };
 
 const startCodeBuild = async message => {
-  const codebuild = CodeBuild();
-
   try {
-    await codebuild.startBuild({
+    const input = {
       projectName: message.ResourceProperties.ProjectName,
       environmentVariablesOverride: [
         {
@@ -67,7 +66,12 @@ const startCodeBuild = async message => {
           value: message.ResourceProperties.SourceVersion
         }
       ]
-    }).promise();
+    };
+
+    const client = new CodeBuildClient({ region: process.env.AWS_REGION });
+    const command = new StartBuildCommand(input);
+
+    await client.send(command);
   } catch (err) {
     const msg = `Failed to start CodeBuild project: ${err.message}`;
     console.log(msg);
