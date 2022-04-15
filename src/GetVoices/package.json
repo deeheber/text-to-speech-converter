@@ -1,7 +1,8 @@
 {
-  "name": "function",
+  "name": "get-voices",
+  "type": "module",
   "version": "1.0.0",
-  "devDependencies": {
-    "aws-sdk": "~2"
+  "dependencies": {
+    "@aws-sdk/client-polly": "^3.72.0"
   }
 }

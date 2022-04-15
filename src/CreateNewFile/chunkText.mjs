@@ -1,4 +1,4 @@
-module.exports = function chunkText (originalText) {
+export const chunkText = (originalText) => {
   const chunkLength = 2500;
   const textBlocks = [];
   let start = 0;

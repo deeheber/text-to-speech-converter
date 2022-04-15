@@ -1,7 +1,8 @@
 {
   "name": "websitebuildtrigger",
+  "type": "module",
   "version": "1.0.0",
-  "devDependencies": {
-    "aws-sdk": "~2"
+  "dependencies": {
+    "@aws-sdk/client-codebuild": "^3.67.0"
   }
 }

@@ -1,9 +1,10 @@
-const https = require('https');
-const url = require('url');
+import { request } from 'https';
+import { parse } from 'url';
 
-module.exports = async (physicalResourceId, attributes, status, message, reason) => {
+export const sendProvisionResponse = async (physicalResourceId, attributes, status, message, reason) => {
   return new Promise((resolve, reject) => {
-    const parsedUrl = url.parse(message.ResponseURL);
+    // @TODO: @deprecated — Legacy: Use the WHATWG URL API instead.
+    const parsedUrl = parse(message.ResponseURL);
     const response = {
       Status: status,
       Reason: reason,
@@ -22,7 +23,7 @@ module.exports = async (physicalResourceId, attributes, status, message, reason)
 
     console.log(`Sending response back to CloudFormation: ${JSON.stringify(response, null, 2)}`);
 
-    const req = https.request(options, (res) => {
+    const req = request(options, (res) => {
       if (res.statusCode === 200) {
         resolve();
       } else {

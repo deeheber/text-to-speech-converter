@@ -1,8 +1,11 @@
 {
   "name": "create-new-file",
+  "type": "module",
   "version": "1.0.0",
   "dependencies": {
-    "aws-sdk": "~2",
-    "uuid": "^8"
+    "@aws-sdk/client-dynamodb": "^3.72.0",
+    "@aws-sdk/client-polly": "^3.72.0",
+    "@aws-sdk/client-s3": "^3.72.0",
+    "@aws-sdk/lib-dynamodb": "^3.72.0"
   }
 }
