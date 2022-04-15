@@ -2,12 +2,10 @@ import { randomUUID } from 'crypto';
 import * as fs from 'fs';
 import { writeFile } from 'fs/promises';
 
-import DynamoDB from 'aws-sdk/clients/dynamodb';
-import Polly from 'aws-sdk/clients/polly';
-import S3 from 'aws-sdk/clients/s3';
-const dynamodb = new DynamoDB.DocumentClient();
-const polly = new Polly();
-const s3 = new S3();
+import AWS from 'aws-sdk';
+const dynamodb = new AWS.DynamoDB.DocumentClient();
+const polly = new AWS.Polly();
+const s3 = new AWS.S3();
 
 import { chunkText } from './chunkText';
 

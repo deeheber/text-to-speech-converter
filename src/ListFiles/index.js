@@ -1,5 +1,5 @@
-import DynamoDB from 'aws-sdk/clients/dynamodb';
-const dynamodb = new DynamoDB.DocumentClient();
+import AWS from 'aws-sdk';
+const dynamodb = new AWS.DynamoDB.DocumentClient();
 
 export const handler = async message => {
   console.log('Get file invoked with message: ', message);

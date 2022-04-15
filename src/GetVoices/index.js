@@ -1,6 +1,6 @@
-import Polly from 'aws-sdk/clients/polly';
+import AWS from 'aws-sdk';
 
-const polly = new Polly();
+const polly = new AWS.Polly();
 
 export const handler = async message => {
   // Log the event argument for debugging and for use in local development.

@@ -1,7 +1,6 @@
-import DynamoDB from 'aws-sdk/clients/dynamodb';
-import S3 from 'aws-sdk/clients/s3';
-const dynamodb = new DynamoDB.DocumentClient();
-const s3 = new S3();
+import AWS from 'aws-sdk';
+const dynamodb = new AWS.DynamoDB.DocumentClient();
+const s3 = new AWS.S3();
 
 export const handler = async message => {
   // Log the event argument for debugging and for use in local development.

@@ -1,4 +1,4 @@
-import CodeBuild from 'aws-sdk/clients/codebuild';
+import AWS from 'aws-sdk';
 import { sendProvisionResponse } from './sendProvisionResponse';
 
 export const handler = async event => {
@@ -21,7 +21,7 @@ export const handler = async event => {
     switch (event.RequestType) {
       case 'Create':
       case 'Update':
-        return startCodeBuild(event);
+        return AWS.startCodeBuild(event);
   
       case 'Delete':
         return sendProvisionResponse(event.PhysicalResourceId, null, 'SUCCESS', event);
