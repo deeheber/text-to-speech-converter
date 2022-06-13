@@ -62,7 +62,7 @@ export const handler = async (message) => {
       console.log('SUCCESS converting text chunk to audio: ', pollyFile);
 
       const flag = i === 0 ? 'w' : 'a';
-      const writtenFile = await writeFile(`/tmp/${id}.mp3`, pollyFile.AudioStream, { flag });
+      await writeFile(`/tmp/${id}.mp3`, pollyFile.AudioStream, { flag });
 
       console.log('SUCCESS writing file chunk. ');
     }
