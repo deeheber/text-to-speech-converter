@@ -64,7 +64,7 @@ export const handler = async (message) => {
       const flag = i === 0 ? 'w' : 'a';
       const writtenFile = await writeFile(`/tmp/${id}.mp3`, pollyFile.AudioStream, { flag });
 
-      console.log('SUCCESS writing file chunk: ', writtenFile);
+      console.log('SUCCESS writing file chunk. ');
     }
 
     console.log('SUCCESS writing all text chunk to /tmp');
