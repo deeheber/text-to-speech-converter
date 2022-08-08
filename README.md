@@ -46,9 +46,11 @@ Creates a new text to speech conversion
 2. `cd src/frontend` && `npm install`
 3. create a new file under `src/frontend/src` and name it `config.js`. Find you ApiURL from the CloudFormation stack Outputs...should look something like `https://6wpbpyxfgf.execute-api.us-east-1.amazonaws.com`. Add the following to the file
   ```
-  export default {
-    backendAPI: '[ your backend api url here ]'
+  const apiRef =  {
+    backendAPI: 'Add your backend API URL here'
   };
+
+  export default apiRef;
   ```
 4. `npm start`
 

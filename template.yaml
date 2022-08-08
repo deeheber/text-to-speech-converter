@@ -223,6 +223,7 @@ Resources:
                 runtime-versions:
                   nodejs: 14
                 commands:
+                  - n 16
                   - git clone ${SourceLocation} repo
                   - cd repo
                   - git checkout ${SourceVersion}
