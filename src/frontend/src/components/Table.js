@@ -1,6 +1,21 @@
 import '../styles/Table.css';
 
-function Table ({ isLoading, rows, onDelete }) {
+function Table ({ API, isLoading, setRows, rows }) {
+  async function handleDelete (id) {
+    const deleteConfirm = window.confirm('Do you really want to delete?');
+    if (!deleteConfirm) {
+      return;
+    }
+  
+    try {
+      await API.del('backend', `/file/${id}`);
+      setRows({ type: 'remove', payload: { id }})
+    } catch (err) {
+      alert(`An error occurred: ${err.message}`);
+      console.error(err);
+    }
+  }
+
   return (
     <table>
       <thead>
@@ -26,7 +41,7 @@ function Table ({ isLoading, rows, onDelete }) {
             <td>{row.voice}</td>
             <td>{row.createdAt ? new Date(row.createdAt).toLocaleString() : ''}</td>
             <td><a href={row.url} target='_blank' rel="noreferrer">Download</a></td>
-            <td><button className='deleteButton' onClick={() => onDelete(row.id)}>X</button></td>
+            <td><button className='deleteButton' onClick={() => handleDelete(row.id)}>X</button></td>
           </tr>
         ))}
 
