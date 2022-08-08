@@ -46,9 +46,11 @@ Creates a new text to speech conversion
 2. `cd src/frontend` && `npm install`
 3. create a new file under `src/frontend/src` and name it `config.js`. Find you ApiURL from the CloudFormation stack Outputs...should look something like `https://6wpbpyxfgf.execute-api.us-east-1.amazonaws.com`. Add the following to the file
   ```
-  export default {
-    backendAPI: '[ your backend api url here ]'
+  const apiRef =  {
+    backendAPI: 'Add your backend API URL here'
   };
+
+  export default apiRef;
   ```
 4. `npm start`
 
@@ -65,7 +67,7 @@ If you find a bug or have a question, feel free to open a new issue and our main
 ### Pull Request Process
 1. Fork the respository
 2. Make any changes you'd like
-3. Open a new PR against `master` with a description of the proposed changes as well as any other information you find relevant.
+3. Open a new PR against `main` with a description of the proposed changes as well as any other information you find relevant.
 4. If your PR fixes an open issue be sure to write `fixes #[ issue number here ]`
 
 ### Finding Help
