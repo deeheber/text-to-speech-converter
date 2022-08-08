@@ -67,7 +67,7 @@ If you find a bug or have a question, feel free to open a new issue and our main
 ### Pull Request Process
 1. Fork the respository
 2. Make any changes you'd like
-3. Open a new PR against `master` with a description of the proposed changes as well as any other information you find relevant.
+3. Open a new PR against `main` with a description of the proposed changes as well as any other information you find relevant.
 4. If your PR fixes an open issue be sure to write `fixes #[ issue number here ]`
 
 ### Finding Help
