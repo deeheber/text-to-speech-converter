@@ -44,6 +44,7 @@ const startCodeBuild = async message => {
   try {
     const input = {
       projectName: message.ResourceProperties.ProjectName,
+      timeoutInMinutesOverride: 15,
       environmentVariablesOverride: [
         {
           name: 'CFN_STACK_ID',
