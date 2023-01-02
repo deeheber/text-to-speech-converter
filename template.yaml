@@ -35,7 +35,7 @@ Resources:
         - arm64
       CodeUri: src/CreateNewFile
       Handler: index.handler
-      Runtime: nodejs16.x
+      Runtime: nodejs18.x
       MemorySize: 3008
       Timeout: 300
       Tracing: Active
@@ -90,7 +90,7 @@ Resources:
         - arm64
       CodeUri: src/DeleteFile
       Handler: index.handler
-      Runtime: nodejs16.x
+      Runtime: nodejs18.x
       MemorySize: 3008
       Timeout: 45
       Tracing: Active
@@ -140,7 +140,7 @@ Resources:
         - arm64
       CodeUri: src/GetVoices
       Handler: index.handler
-      Runtime: nodejs16.x
+      Runtime: nodejs18.x
       MemorySize: 3008
       Timeout: 60
       Tracing: Active
@@ -172,7 +172,7 @@ Resources:
         - arm64
       CodeUri: src/ListFiles
       Handler: index.handler
-      Runtime: nodejs16.x
+      Runtime: nodejs18.x
       MemorySize: 3008
       Timeout: 30
       Tracing: Active
@@ -207,7 +207,7 @@ Resources:
         Type: NO_ARTIFACTS
       Environment:
         ComputeType: BUILD_GENERAL1_SMALL
-        Image: aws/codebuild/standard:5.0
+        Image: aws/codebuild/standard:6.0
         Type: LINUX_CONTAINER
         EnvironmentVariables:
           - Name: API_URL
@@ -221,9 +221,9 @@ Resources:
             phases:
               install:
                 runtime-versions:
-                  nodejs: 14
+                  nodejs: 16
                 commands:
-                  - n 16
+                  - n 18
                   - git clone ${SourceLocation} repo
                   - cd repo
                   - git checkout ${SourceVersion}
@@ -359,7 +359,7 @@ Resources:
         - arm64
       CodeUri: src/WebsiteBuildTrigger
       Handler: index.handler
-      Runtime: nodejs16.x
+      Runtime: nodejs18.x
       MemorySize: 5000
       Timeout: 30
       Tracing: Active
