@@ -3,8 +3,7 @@
   "type": "module",
   "version": "1.0.0",
   "dependencies": {
-    "@aws-sdk/client-dynamodb": "^3.105.0",
-    "@aws-sdk/lib-dynamodb": "^3.105.0",
-    "aws-sdk": "~2"
+    "@aws-sdk/client-dynamodb": "^3.485.0",
+    "@aws-sdk/lib-dynamodb": "^3.485.0"
   }
 }
