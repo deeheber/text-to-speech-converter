@@ -2,10 +2,14 @@ import { randomUUID } from 'crypto';
 import * as fs from 'fs';
 import { writeFile } from 'fs/promises';
 
-import { PollyClient, SynthesizeSpeechCommand } from "@aws-sdk/client-polly";
-import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
-import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
-import { DynamoDBDocumentClient, PutCommand, UpdateCommand } from "@aws-sdk/lib-dynamodb";
+import { PollyClient, SynthesizeSpeechCommand } from '@aws-sdk/client-polly';
+import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
+import {
+  DynamoDBDocumentClient,
+  PutCommand,
+  UpdateCommand,
+} from '@aws-sdk/lib-dynamodb';
 
 import { chunkText } from './chunkText.mjs';
 
@@ -32,8 +36,8 @@ export const handler = async (message) => {
         text: text.substring(0, 1500),
         voice,
         status: 'PROCESSING',
-        createdAt
-      }
+        createdAt,
+      },
     };
 
     console.log(`Adding file metadata to table ${process.env.TABLE_NAME}`);
@@ -55,7 +59,7 @@ export const handler = async (message) => {
           OutputFormat: 'mp3',
           Text: `${textChunks[i]}`,
           TextType: 'text',
-          VoiceId: `${voice}`
+          VoiceId: `${voice}`,
         })
       );
 
@@ -74,26 +78,28 @@ export const handler = async (message) => {
       ACL: 'public-read',
       Bucket: process.env.BUCKET_NAME,
       Key: `${id}.mp3`,
-      Body: fs.createReadStream(`/tmp/${id}.mp3`)
+      Body: fs.createReadStream(`/tmp/${id}.mp3`),
     });
     const uploadToS3 = await s3Client.send(s3Command);
 
     console.log('SUCCESS uploading to S3: ', uploadToS3);
 
-    const updateDynamo = await ddbDocClient.send(new UpdateCommand({
-      TableName: process.env.TABLE_NAME,
-      Key: { id },
-      UpdateExpression: 'SET #file_status = :status, #s3_url = :url',
-      ExpressionAttributeValues: {
-        ':status': 'COMPLETE',
-        ':url': `https://${process.env.BUCKET_NAME}.s3.amazonaws.com/${id}.mp3`
-      },
-      ExpressionAttributeNames: {
-        '#file_status': 'status',
-        '#s3_url': 'url'
-      },
-      ReturnValues: 'ALL_NEW'
-    }));
+    const updateDynamo = await ddbDocClient.send(
+      new UpdateCommand({
+        TableName: process.env.TABLE_NAME,
+        Key: { id },
+        UpdateExpression: 'SET #file_status = :status, #s3_url = :url',
+        ExpressionAttributeValues: {
+          ':status': 'COMPLETE',
+          ':url': `https://${process.env.BUCKET_NAME}.s3.amazonaws.com/${id}.mp3`,
+        },
+        ExpressionAttributeNames: {
+          '#file_status': 'status',
+          '#s3_url': 'url',
+        },
+        ReturnValues: 'ALL_NEW',
+      })
+    );
     console.log('SUCCESS adding url to  DynamoDB: ', updateDynamo);
 
     response = JSON.stringify(updateDynamo.Attributes);
@@ -101,24 +107,26 @@ export const handler = async (message) => {
     console.log('ERROR: ', err);
     console.log('Setting DynamoDB status to FAILED');
 
-    const failDynamo = await ddbDocClient.send(new UpdateComment({
-      TableName: process.env.TABLE_NAME,
-      Key: { id },
-      UpdateExpression: 'SET #file_status = :status',
-      ExpressionAttributeValues: {
-        ':status': 'FAILED'
-      },
-      ExpressionAttributeNames: {
-        '#file_status': 'status'
-      },
-      ReturnValues: 'ALL_NEW'
-    }));
+    const failDynamo = await ddbDocClient.send(
+      new UpdateComment({
+        TableName: process.env.TABLE_NAME,
+        Key: { id },
+        UpdateExpression: 'SET #file_status = :status',
+        ExpressionAttributeValues: {
+          ':status': 'FAILED',
+        },
+        ExpressionAttributeNames: {
+          '#file_status': 'status',
+        },
+        ReturnValues: 'ALL_NEW',
+      })
+    );
 
     console.log('Set DynamoDB to FAILED: ', failDynamo);
 
     response = {
       statusCode: err.statusCode || 500,
-      body: JSON.stringify(err.message)
+      body: JSON.stringify(err.message),
     };
   }
 

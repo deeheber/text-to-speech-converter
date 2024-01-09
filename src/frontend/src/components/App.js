@@ -10,9 +10,9 @@ API.configure({
   endpoints: [
     {
       name: 'backend',
-      endpoint: config.backendAPI
-    }
-  ]
+      endpoint: config.backendAPI,
+    },
+  ],
 });
 
 function rowsReducer(state, action) {
@@ -33,7 +33,7 @@ function rowsReducer(state, action) {
   }
 }
 
-function App () {
+function App() {
   const [rows, setRows] = useReducer(rowsReducer, []);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -48,35 +48,26 @@ function App () {
 
     if (isSubscribed === true) {
       loadSpeechList()
-        .then(rowsRes => {
+        .then((rowsRes) => {
           setRows({ type: 'list', payload: rowsRes });
           setIsLoading(false);
         })
-        .catch(err => {
+        .catch((err) => {
           console.error(err);
           setIsLoading(false);
         });
     }
 
-    return () => isSubscribed = false;
+    return () => (isSubscribed = false);
   }, []);
 
-    return (
-      <div className='container'>
-        <h1>Text to speech converter</h1>
-        <Form
-          API={API}
-          setIsLoading={setIsLoading}
-          setRows={setRows}
-        />
-        <Table
-          API={API}
-          rows={rows}
-          isLoading={isLoading}
-          setRows={setRows}
-        />
-      </div>
-    );
+  return (
+    <div className="container">
+      <h1>Text to speech converter</h1>
+      <Form API={API} setIsLoading={setIsLoading} setRows={setRows} />
+      <Table API={API} rows={rows} isLoading={isLoading} setRows={setRows} />
+    </div>
+  );
 }
 
 export default App;
