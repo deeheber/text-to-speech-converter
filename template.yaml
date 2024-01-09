@@ -207,7 +207,7 @@ Resources:
         Type: NO_ARTIFACTS
       Environment:
         ComputeType: BUILD_GENERAL1_SMALL
-        Image: aws/codebuild/standard:6.0
+        Image: aws/codebuild/standard:7.0
         Type: LINUX_CONTAINER
         EnvironmentVariables:
           - Name: API_URL
@@ -221,9 +221,8 @@ Resources:
             phases:
               install:
                 runtime-versions:
-                  nodejs: 16
+                  nodejs: 20
                 commands:
-                  - n 18
                   - git clone ${SourceLocation} repo
                   - cd repo
                   - git checkout ${SourceVersion}
