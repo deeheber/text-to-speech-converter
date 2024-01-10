@@ -1,19 +1,9 @@
 import { useReducer, useState, useEffect } from 'react';
-import API from '@aws-amplify/api';
+import { get } from 'aws-amplify/api';
 import Form from './Form';
 import Table from './Table';
 
 import '../styles/App.css';
-
-import config from '../config';
-API.configure({
-  endpoints: [
-    {
-      name: 'backend',
-      endpoint: config.backendAPI,
-    },
-  ],
-});
 
 function rowsReducer(state, action) {
   switch (action.type) {
@@ -42,14 +32,15 @@ function App() {
     let isSubscribed = true;
 
     const loadSpeechList = async () => {
-      const { Items } = await API.get('backend', '/file');
-      return Items;
+      const getOperation = get({ apiName: 'backend', path: '/file' });
+      return getOperation.response;
     };
 
     if (isSubscribed === true) {
       loadSpeechList()
-        .then((rowsRes) => {
-          setRows({ type: 'list', payload: rowsRes });
+        .then((rowsPromise) => rowsPromise.body.json())
+        .then(({ Items }) => {
+          setRows({ type: 'list', payload: Items });
           setIsLoading(false);
         })
         .catch((err) => {
@@ -64,8 +55,8 @@ function App() {
   return (
     <div className="container">
       <h1>Text to speech converter</h1>
-      <Form API={API} setIsLoading={setIsLoading} setRows={setRows} />
-      <Table API={API} rows={rows} isLoading={isLoading} setRows={setRows} />
+      <Form setIsLoading={setIsLoading} setRows={setRows} />
+      <Table rows={rows} isLoading={isLoading} setRows={setRows} />
     </div>
   );
 }

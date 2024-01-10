@@ -1,6 +1,7 @@
+import { del } from 'aws-amplify/api';
 import '../styles/Table.css';
 
-function Table({ API, isLoading, setRows, rows }) {
+function Table({ isLoading, setRows, rows }) {
   async function handleDelete(id) {
     const deleteConfirm = window.confirm('Do you really want to delete?');
     if (!deleteConfirm) {
@@ -8,7 +9,8 @@ function Table({ API, isLoading, setRows, rows }) {
     }
 
     try {
-      await API.del('backend', `/file/${id}`);
+      const deleteResponse = del({ apiName: 'backend', path: `/file/${id}` });
+      await deleteResponse.response;
       setRows({ type: 'remove', payload: { id } });
     } catch (err) {
       alert(`An error occurred: ${err.message}`);
