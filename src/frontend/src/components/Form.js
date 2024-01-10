@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
+import { get, post } from 'aws-amplify/api';
 import '../styles/Form.css';
 
-function Form({ API, setIsLoading, setRows }) {
+function Form({ setIsLoading, setRows }) {
   const [formData, setFormData] = useState({
     voice: '',
     text: '',
@@ -14,15 +15,16 @@ function Form({ API, setIsLoading, setRows }) {
     let isSubscribed = true;
 
     const loadVoiceList = async () => {
-      const { Voices } = await API.get('backend', '/voices');
-      return Voices;
+      const getOperation = get({ apiName: 'backend', path: '/voices' });
+      return getOperation.response;
     };
 
     if (isSubscribed === true) {
       // Should only on on initial page load
       loadVoiceList()
-        .then((voiceRes) => {
-          setVoiceList(voiceRes);
+        .then((voiceListPromise) => voiceListPromise.body.json())
+        .then(({ Voices }) => {
+          setVoiceList(Voices);
           setIsLoading(false);
         })
         .catch((err) => {
@@ -32,7 +34,7 @@ function Form({ API, setIsLoading, setRows }) {
     }
 
     return () => (isSubscribed = false);
-  }, [API, setIsLoading]);
+  }, [setIsLoading]);
 
   function handleChange(event) {
     setFormData({
@@ -56,7 +58,13 @@ function Form({ API, setIsLoading, setRows }) {
     setFormData({ ...formData, message: 'Loading...' });
 
     try {
-      const newRow = await API.post('backend', '/file', { body: formData });
+      const newRowRequest = post({
+        apiName: 'backend',
+        path: '/file',
+        options: { body: formData },
+      });
+      const newRowResponse = await newRowRequest.response;
+      const newRow = await newRowResponse.body.json();
       // Add result to the rows
       setRows({ type: 'add', payload: newRow });
       // Clear the form
