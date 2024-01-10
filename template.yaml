@@ -229,12 +229,7 @@ Resources:
                   - cd ${SourceDirectory}
               pre_build:
                 commands:
-                  - |
-                    if [ ! -f yarn.lock -a -f package.json ]; then
-                      npm install --omit=dev
-                    elif [ -f yarn.lock -a -f package.json ]; then
-                      yarn install
-                    fi
+                  - npm install --omit=dev
               build:
                 commands:
                   - ${BuildCommand}
