@@ -35,7 +35,7 @@ Resources:
         - arm64
       CodeUri: src/CreateNewFile
       Handler: index.handler
-      Runtime: nodejs20.x
+      Runtime: nodejs22.x
       MemorySize: 3008
       Timeout: 300
       Tracing: Active
@@ -90,7 +90,7 @@ Resources:
         - arm64
       CodeUri: src/DeleteFile
       Handler: index.handler
-      Runtime: nodejs20.x
+      Runtime: nodejs22.x
       MemorySize: 3008
       Timeout: 45
       Tracing: Active
@@ -140,7 +140,7 @@ Resources:
         - arm64
       CodeUri: src/GetVoices
       Handler: index.handler
-      Runtime: nodejs20.x
+      Runtime: nodejs22.x
       MemorySize: 3008
       Timeout: 60
       Tracing: Active
@@ -172,7 +172,7 @@ Resources:
         - arm64
       CodeUri: src/ListFiles
       Handler: index.handler
-      Runtime: nodejs20.x
+      Runtime: nodejs22.x
       MemorySize: 3008
       Timeout: 30
       Tracing: Active
@@ -221,7 +221,7 @@ Resources:
             phases:
               install:
                 runtime-versions:
-                  nodejs: 20
+                  nodejs: 22
                 commands:
                   - git clone ${SourceLocation} repo
                   - cd repo
@@ -353,7 +353,7 @@ Resources:
         - arm64
       CodeUri: src/WebsiteBuildTrigger
       Handler: index.handler
-      Runtime: nodejs20.x
+      Runtime: nodejs22.x
       MemorySize: 5000
       Timeout: 30
       Tracing: Active
