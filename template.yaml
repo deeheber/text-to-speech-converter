@@ -221,7 +221,7 @@ Resources:
             phases:
               install:
                 runtime-versions:
-                  nodejs: 20
+                  nodejs: 22
                 commands:
                   - git clone ${SourceLocation} repo
                   - cd repo
