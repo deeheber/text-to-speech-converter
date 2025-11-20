@@ -376,7 +376,8 @@ Resources:
 Parameters:
   SourceLocation:
     Type: String
-    Description: Location of source code for deployment (designed to work with public Github repos)
+    Description: Location of source code for deployment (designed to work with
+      public Github repos)
     Default: https://github.com/deeheber/text-to-speech-converter.git
   SourceVersion:
     Type: String
