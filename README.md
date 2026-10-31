@@ -3,7 +3,7 @@
 ## Summary
 This is an application that takes in text and outputs an audio file of that text. Written with US-English in mind, so it might not convert as expected for other languages.
 
-My deployed version [here](http://text-to-speech-frontend.s3-website-us-west-2.amazonaws.com/). Feel free to add your own things to convert to audio, download files, and delete files.
+My deployed version [here](https://d21fkyflmuqkf4.cloudfront.net/). Feel free to add your own things to convert to audio, download files, and delete files.
 
 ### Technologies Used
 - [Node](https://nodejs.org/)
@@ -20,7 +20,18 @@ My deployed version [here](http://text-to-speech-frontend.s3-website-us-west-2.a
 
 ### Architecture Diagram
 
-![text-to-speech-architecture](https://user-images.githubusercontent.com/12616554/156626768-d509d604-b52f-42e5-9600-e8b2fe588ca7.png)
+```text
+Browser ── CloudFront ── S3 (frontend)
+   │            └────── S3 (recordings)
+   │                         ▲
+   └── API Gateway ── Lambda ─┤
+                        ├──── DynamoDB
+                        └──── Polly
+
+CodeBuild ── S3 (frontend)
+```
+
+CloudFront serves both private S3 buckets over HTTPS using Origin Access Control.
 
 
 ### Directions To Run
@@ -28,7 +39,8 @@ Requires Node.js 24 and an up-to-date AWS SAM CLI.
 
 1. Clone this repo (note: this script is designed to work with public Github repos, it might possibly also work with public Bitbucket and public Gitlab repos, but it hasn't been tested)
 2. Deploy the stack via the AWS SAM CLI. Getting started directions [here](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-install.html). TL;DR run [`sam build`](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-cli-command-reference-sam-build.html) and [`sam deploy --guided`](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-cli-command-reference-sam-deploy.html).
-3. Navigate to the url for your frontend. It'll be in the CloudFormation stack Outputs...should be something like: `http://{your stack name}-frontend.s3-website-{your region}.amazonaws.com/`
+
+3. Open `FrontendURL` from the CloudFormation stack outputs (`https://<distribution-domain>.cloudfront.net/`).
 
 ### Backend API Endpoints
 #### GET /voices
@@ -65,6 +77,8 @@ From the repo root:
 ```sh
 npm ci --prefix src/CreateNewFile
 npm test --prefix src/CreateNewFile
+npm ci --prefix src/ListFiles
+npm test --prefix src/ListFiles
 npm ci --prefix src/GetVoices
 npm test --prefix src/GetVoices
 npm ci --prefix src/WebsiteBuildTrigger
@@ -90,4 +104,4 @@ If you find a bug or have a question, feel free to open a new issue and our main
 4. If your PR fixes an open issue be sure to write `fixes #[ issue number here ]`
 
 ### Finding Help
-Please send a direct message to [@deeheber on Twitter](https://twitter.com/deeheber) if any of your questions have not been addressed by the documentation in this repository.
+For questions not covered here, visit [my website](https://danielleheberling.xyz/) for email and social links in the footer.

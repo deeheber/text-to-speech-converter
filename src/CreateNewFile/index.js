@@ -91,9 +91,10 @@ export const handler = async (message) => {
 
     const s3Client = new S3Client({ region: process.env.AWS_REGION });
     const s3Command = new PutObjectCommand({
-      ACL: 'public-read',
       Bucket: process.env.BUCKET_NAME,
       Key: `${id}.mp3`,
+      ContentType: 'audio/mpeg',
+      CacheControl: 'no-store',
       Body: fs.createReadStream(`/tmp/${id}.mp3`),
     });
     const uploadToS3 = await s3Client.send(s3Command);
@@ -107,7 +108,7 @@ export const handler = async (message) => {
         UpdateExpression: 'SET #file_status = :status, #s3_url = :url',
         ExpressionAttributeValues: {
           ':status': 'COMPLETE',
-          ':url': `https://${process.env.BUCKET_NAME}.s3.amazonaws.com/${id}.mp3`,
+          ':url': `${process.env.AUDIO_BASE_URL}/${encodeURIComponent(`${id}.mp3`)}`,
         },
         ExpressionAttributeNames: {
           '#file_status': 'status',

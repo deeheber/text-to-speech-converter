@@ -47,9 +47,11 @@ function Table({ isLoading, setRows, rows }) {
               {row.createdAt ? new Date(row.createdAt).toLocaleString() : ''}
             </td>
             <td>
-              <a href={row.url} target="_blank" rel="noreferrer">
-                Download
-              </a>
+              {row.url && (
+                <a href={row.url} target="_blank" rel="noreferrer">
+                  Download
+                </a>
+              )}
             </td>
             <td>
               <button
