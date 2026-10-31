@@ -120,6 +120,17 @@ describe('App auth handling', () => {
     expect(window.alert).not.toHaveBeenCalled();
   });
 
+  it('calls onLocked when DELETE fails and there is no session', async () => {
+    api.del.mockImplementation(() => fail(new Error('Network error')));
+    const onLocked = vi.fn();
+    render(<App onLocked={onLocked} />);
+    const button = await screen.findByRole('button', { name: 'X' });
+    clearSession();
+    await userEvent.click(button);
+    await waitFor(() => expect(onLocked).toHaveBeenCalledWith(EXPIRED));
+    expect(window.alert).not.toHaveBeenCalled();
+  });
+
   it('calls onLocked when POST /file returns 401', async () => {
     api.post.mockImplementation(() => fail(httpError(401)));
     const onLocked = vi.fn();
