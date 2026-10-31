@@ -1,0 +1,14 @@
+{
+  "name": "auth",
+  "type": "module",
+  "version": "1.0.0",
+  "scripts": {
+    "test": "node --test"
+  },
+  "dependencies": {
+    "@aws-sdk/client-secrets-manager": "^3.1161.0"
+  },
+  "devDependencies": {
+    "aws-sdk-client-mock": "^4.1.0"
+  }
+}
