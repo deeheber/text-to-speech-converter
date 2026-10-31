@@ -104,4 +104,4 @@ If you find a bug or have a question, feel free to open a new issue and our main
 4. If your PR fixes an open issue be sure to write `fixes #[ issue number here ]`
 
 ### Finding Help
-Please send a direct message to [@deeheber on Twitter](https://twitter.com/deeheber) if any of your questions have not been addressed by the documentation in this repository.
+For questions not covered here, visit [my website](https://danielleheberling.xyz/) for email and social links in the footer.
