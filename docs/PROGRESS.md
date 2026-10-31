@@ -13,7 +13,7 @@ Started: 2026-10-31T17:18:59.941Z
 - [x] P0-06 Wire secrets, functions, authorizer and throttling into the template, with a template test
 - [x] P0-07 Document the password, rotation and deploy order in the README
 - [x] P0-08 Phase 0 checkpoint: push and list manual API checks
-- [ ] P1-01 Add Vitest and the session store
+- [x] P1-01 Add Vitest and the session store
 - [ ] P1-02 Add the login API client and the Amplify configuration
 - [ ] P1-03 Add the password form
 - [ ] P1-04 Add the Lock button and auth-error handling to App, Form and Table
@@ -67,3 +67,7 @@ Manual check: NOT VERIFIED (human)
 - after rotating the signing key the old token is rejected within about 10 minutes
 - CloudWatch logs for all six Lambdas (CreateNewFile, ListFiles, DeleteFile, GetVoices, Login, TokenAuthorizer) contain no password or token
 - Deploying Phase 0 without Phase 1 breaks the deployed frontend.
+
+### P1-01 — 86bfb49
+
+Tests: 4 in src/frontend/test/session.test.js. Installed vitest@^5 (5.0.5, peer vite ^8), jsdom, @testing-library/react, @testing-library/user-event; test script "vitest run"; vite.config.js test.environment jsdom, no globals. session.js: key tts.session, getSession removes bad/expired entries.
