@@ -131,6 +131,54 @@ test('returns 202 with public metadata, starts native Polly and saves its actual
   );
 });
 
+test('keeps an accepted task ID when its output URI is missing or unrecognized', async () => {
+  for (const OutputUri of [
+    undefined,
+    'not a URL',
+    `https://other.example.com/${id}.task-1.mp3`,
+    `https://s3.us-west-2.amazonaws.com/audio/%broken`,
+    `https://s3.us-west-2.amazonaws.com/other-bucket/${id}.task-1.mp3`,
+    'https://audio.s3.us-west-2.amazonaws.com/other-recording.mp3',
+  ]) {
+    records.clear();
+    polly.on(StartSpeechSynthesisTaskCommand).resolves({
+      SynthesisTask: { TaskId: 'task-1', TaskStatus: 'scheduled', OutputUri },
+    });
+
+    const response = await handler(body());
+
+    assert.equal(response.statusCode, 202);
+    assert.equal(JSON.parse(response.body).status, 'QUEUED');
+    assert.equal(records.get(id).taskId, 'task-1');
+    assert.equal(records.get(id).objectKey, undefined);
+  }
+});
+
+test('accepts global path-style and virtual-hosted S3 output URIs for the configured bucket', async () => {
+  for (const host of [
+    's3.amazonaws.com/audio',
+    'audio.s3.amazonaws.com',
+    'audio.s3.us-west-2.amazonaws.com',
+  ]) {
+    records.clear();
+    polly.on(StartSpeechSynthesisTaskCommand).resolves({
+      SynthesisTask: {
+        TaskId: 'task-1',
+        TaskStatus: 'completed',
+        OutputUri: `https://${host}/${id}.task-1.mp3`,
+      },
+    });
+
+    const response = await handler(body());
+
+    assert.equal(
+      JSON.parse(response.body).url,
+      `https://audio.example.com/${id}.task-1.mp3`,
+    );
+    assert.equal(records.get(id).status, 'COMPLETE');
+  }
+});
+
 test('accepts the UTF-16 boundary and truncates previews without splitting a surrogate pair', async () => {
   const text = '😀'.repeat(50000);
 

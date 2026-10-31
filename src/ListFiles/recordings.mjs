@@ -1,5 +1,5 @@
 import { GetSpeechSynthesisTaskCommand } from '@aws-sdk/client-polly';
-import { HeadObjectCommand, ListObjectsV2Command } from '@aws-sdk/client-s3';
+import { ListObjectsV2Command } from '@aws-sdk/client-s3';
 import { GetCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
 import { setTimeout as sleep } from 'node:timers/promises';
 
@@ -35,24 +35,33 @@ function taskKey(uri, id) {
     return undefined;
   }
 
-  const url = new URL(uri);
-  const bucket = process.env.BUCKET_NAME;
-  const path = decodeURIComponent(url.pathname.slice(1));
-  const key = [
-    `${bucket}.s3.${process.env.AWS_REGION}.amazonaws.com`,
-    `${bucket}.s3.amazonaws.com`,
-  ].includes(url.hostname)
-    ? path
-    : /^s3[.-][a-z0-9-]+\.amazonaws\.com$/.test(url.hostname) &&
-        path.startsWith(`${bucket}/`)
-      ? path.slice(bucket.length + 1)
-      : undefined;
+  try {
+    const url = new URL(uri);
+    const bucket = process.env.BUCKET_NAME;
+    const path = decodeURIComponent(url.pathname.slice(1));
+    const virtualHost = [
+      `${bucket}.s3.${process.env.AWS_REGION}.amazonaws.com`,
+      `${bucket}.s3.amazonaws.com`,
+    ].includes(url.hostname);
+    const pathHost =
+      url.hostname === 's3.amazonaws.com' ||
+      /^s3[.-][a-z0-9-]+\.amazonaws\.com$/.test(url.hostname);
+    let key;
 
-  if (!validKey(key, id)) {
-    throw new Error('Unexpected Polly output key');
+    if (url.protocol !== 'https:') {
+      return undefined;
+    }
+
+    if (virtualHost) {
+      key = path;
+    } else if (pathHost && path.startsWith(`${bucket}/`)) {
+      key = path.slice(bucket.length + 1);
+    }
+
+    return validKey(key, id) ? key : undefined;
+  } catch {
+    return undefined;
   }
-
-  return key;
 }
 
 const unknown = {
@@ -74,20 +83,20 @@ export async function refresh(
     return item;
   }
 
-  const recoverOutput = async () => {
+  const recoverOutput = async (knownKey) => {
     const result = await send(
       storage,
       new ListObjectsV2Command({
         Bucket: process.env.BUCKET_NAME,
-        Prefix: `${item.id}.`,
+        Prefix: knownKey ?? `${item.id}.`,
         MaxKeys: 2,
       }),
     );
-    const matches = (result.Contents ?? []).filter(({ Key }) =>
-      validKey(Key, item.id),
+    const matches = (result.Contents ?? []).filter(
+      ({ Key }) => validKey(Key, item.id) && (!knownKey || Key === knownKey),
     );
 
-    return !result.IsTruncated && matches.length === 1
+    return matches.length === 1 && (knownKey || !result.IsTruncated)
       ? { status: 'COMPLETE', objectKey: matches[0].Key }
       : { ...unknown };
   };
@@ -145,29 +154,9 @@ export async function refresh(
           patch = { ...patch, ...unknown };
         }
       } else {
-        patch = { ...unknown };
-
-        if (validKey(item.objectKey, item.id)) {
-          try {
-            await send(
-              storage,
-              new HeadObjectCommand({
-                Bucket: process.env.BUCKET_NAME,
-                Key: item.objectKey,
-              }),
-            );
-            patch = { status: 'COMPLETE' };
-          } catch (error) {
-            if (
-              error.name !== 'NotFound' &&
-              error.$metadata?.httpStatusCode !== 404
-            ) {
-              throw error;
-            }
-          }
-        } else {
-          patch = await recoverOutput();
-        }
+        patch = await recoverOutput(
+          validKey(item.objectKey, item.id) ? item.objectKey : undefined,
+        );
       }
     } else if (
       item.status !== 'STARTING' ||
@@ -188,12 +177,16 @@ export async function refresh(
     ...item,
     ...patch,
     lastCheckedAt: Date.now(),
-    revision: item.revision + 1,
   };
 
   if (patch.status && patch.status !== 'UNKNOWN' && patch.status !== 'FAILED') {
     delete next.message;
   }
+
+  const changed = ['status', 'objectKey', 'message'].some(
+    (field) => next[field] !== item[field],
+  );
+  next.revision = item.revision + (changed ? 1 : 0);
 
   const fields = [
     'status',
@@ -228,16 +221,21 @@ export async function refresh(
     return updated.Attributes;
   } catch (error) {
     if (error.name === 'ConditionalCheckFailedException') {
-      const current = await send(
-        database,
-        new GetCommand({
-          TableName: process.env.TABLE_NAME,
-          Key: { id: item.id },
-          ConsistentRead: true,
-        }),
-      );
+      try {
+        const current = await send(
+          database,
+          new GetCommand({
+            TableName: process.env.TABLE_NAME,
+            Key: { id: item.id },
+            ConsistentRead: true,
+          }),
+        );
 
-      return current.Item ?? null;
+        return current.Item ?? null;
+      } catch (readError) {
+        console.error('Read refreshed status failed', readError.name);
+        return item;
+      }
     }
 
     console.error('Save refreshed status failed', error.name);

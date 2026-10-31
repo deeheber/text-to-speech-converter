@@ -316,9 +316,6 @@ Resources:
               Resource: '*'
               Action: polly:GetSpeechSynthesisTask
             - Effect: Allow
-              Resource: !Sub '${FileStore.Arn}/????????-????-4???-????-????????????.*.mp3'
-              Action: s3:GetObject
-            - Effect: Allow
               Resource: !GetAtt FileStore.Arn
               Action: s3:ListBucket
               Condition:

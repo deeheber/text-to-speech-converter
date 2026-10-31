@@ -4,7 +4,7 @@ import { isAuthError } from '../api';
 import { getSession } from '../session';
 import '../styles/Form.css';
 
-function Form({ onAccepted, onLocked }) {
+function Form({ onAccepted, onChecked, onLocked }) {
   const [formData, setFormData] = useState({ voice: '', text: '' });
   const [voiceList, setVoiceList] = useState([]);
   const [voicesLoading, setVoicesLoading] = useState(true);
@@ -79,8 +79,6 @@ function Form({ onAccepted, onLocked }) {
         `Recording ${row.status.toLowerCase()}. You can close this page and check later.`,
       );
     }
-
-    onAccepted(row);
   }
 
   async function submit(newAttempt = false) {
@@ -121,6 +119,7 @@ function Form({ onAccepted, onLocked }) {
 
       if (mounted.current) {
         receive(row);
+        onAccepted(row);
       }
     } catch (err) {
       if (!mounted.current) {
@@ -143,6 +142,7 @@ function Form({ onAccepted, onLocked }) {
 
       if (row?.id && row.status === 'FAILED') {
         receive(row);
+        onAccepted(row);
       } else if (
         err.response?.statusCode === 400 ||
         err.response?.statusCode === 409
@@ -188,6 +188,7 @@ function Form({ onAccepted, onLocked }) {
 
       if (mounted.current) {
         receive(row);
+        onChecked(row);
       }
     } catch (err) {
       if (!mounted.current) {

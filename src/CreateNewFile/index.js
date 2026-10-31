@@ -57,23 +57,36 @@ function outputKey(uri, id) {
     return undefined;
   }
 
-  const url = new URL(uri);
-  const bucket = process.env.BUCKET_NAME;
-  const path = decodeURIComponent(url.pathname.slice(1));
-  const key =
-    url.hostname === `${bucket}.s3.${process.env.AWS_REGION}.amazonaws.com` ||
-    url.hostname === `${bucket}.s3.amazonaws.com`
-      ? path
-      : /^s3[.-][a-z0-9-]+\.amazonaws\.com$/.test(url.hostname) &&
-          path.startsWith(`${bucket}/`)
-        ? path.slice(bucket.length + 1)
-        : undefined;
+  try {
+    const url = new URL(uri);
+    const bucket = process.env.BUCKET_NAME;
+    const path = decodeURIComponent(url.pathname.slice(1));
+    const virtualHost = [
+      `${bucket}.s3.${process.env.AWS_REGION}.amazonaws.com`,
+      `${bucket}.s3.amazonaws.com`,
+    ].includes(url.hostname);
+    const pathHost =
+      url.hostname === 's3.amazonaws.com' ||
+      /^s3[.-][a-z0-9-]+\.amazonaws\.com$/.test(url.hostname);
+    let key;
 
-  if (!key || !new RegExp(`^${id}\\.[a-zA-Z0-9_-]+\\.mp3$`).test(key)) {
-    throw new Error('Unexpected Polly output key');
+    if (url.protocol !== 'https:') {
+      return undefined;
+    }
+
+    if (virtualHost) {
+      key = path;
+    } else if (pathHost && path.startsWith(`${bucket}/`)) {
+      key = path.slice(bucket.length + 1);
+    }
+
+    return typeof key === 'string' &&
+      new RegExp(`^${id}\\.[a-zA-Z0-9_-]+\\.mp3$`).test(key)
+      ? key
+      : undefined;
+  } catch {
+    return undefined;
   }
-
-  return key;
 }
 
 export const handler = async (event, context = {}) => {

@@ -135,9 +135,9 @@ it('recovers a network failure through Check status without starting another con
     response: Promise.reject(new Error('Network error')),
   }));
 
-  const accepted = vi.fn();
+  const checked = vi.fn();
 
-  render(<Form onAccepted={accepted} onLocked={vi.fn()} />);
+  render(<Form onAccepted={vi.fn()} onChecked={checked} onLocked={vi.fn()} />);
 
   const user = userEvent.setup();
 
@@ -152,7 +152,7 @@ it('recovers a network failure through Check status without starting another con
     expect.objectContaining({ path: `/file/${requestId}` }),
   );
   expect(api.post).toHaveBeenCalledTimes(1);
-  expect(accepted).toHaveBeenCalledWith(row);
+  expect(checked).toHaveBeenCalledWith(row);
   expect(screen.getByLabelText('Text to convert').value).toBe('');
 });
 
@@ -371,6 +371,79 @@ it('continues polling until an accepted recording appears, and disables deleting
   await act(async () => vi.advanceTimersByTimeAsync(20000));
 
   expect(file).toHaveBeenCalledTimes(4);
+});
+
+it('keeps the current page when the form checks a submission status', async () => {
+  const older = {
+    ...row,
+    id: 'older',
+    status: 'COMPLETE',
+    text: 'older recording',
+  };
+
+  file.mockImplementation(({ queryParams }) =>
+    ok({ Items: [older], nextCursor: queryParams.cursor ? null : 'page2' }),
+  );
+  api.post.mockImplementation(() => ok({ ...row, status: 'UNKNOWN' }));
+  render(<App onLocked={vi.fn()} />);
+
+  const user = userEvent.setup();
+
+  await screen.findByText('older recording');
+  await user.type(screen.getByLabelText('Text to convert'), 'hello');
+  await user.click(screen.getByRole('button', { name: 'Submit', exact: true }));
+  await user.click(screen.getByRole('button', { name: 'Next' }));
+
+  expect(screen.getByText('Page 2')).toBeTruthy();
+
+  await user.click(screen.getByRole('button', { name: 'Check status' }));
+
+  expect(screen.getByText('Page 2')).toBeTruthy();
+  expect(file.mock.lastCall[0].queryParams.cursor).toBe('page2');
+  expect(screen.getByRole('status').textContent).toContain('queued');
+});
+
+it('pauses waiting for an unlisted submission on later pages and resumes on page one', async () => {
+  vi.useFakeTimers();
+  const older = {
+    ...row,
+    id: 'older',
+    status: 'COMPLETE',
+    text: 'older recording',
+  };
+
+  file.mockImplementation(() => ok({ Items: [older], nextCursor: 'page2' }));
+  render(<App onLocked={vi.fn()} />);
+  await act(async () => {});
+  fireEvent.change(screen.getByLabelText('Text to convert'), {
+    target: { value: 'hello' },
+  });
+  await act(async () => fireEvent.submit(document.querySelector('form')));
+  await act(async () =>
+    fireEvent.click(screen.getByRole('button', { name: 'Next' })),
+  );
+
+  const calls = file.mock.calls.length;
+
+  expect(screen.getByText('Page 2')).toBeTruthy();
+
+  await act(async () => vi.advanceTimersByTimeAsync(30000));
+
+  expect(file).toHaveBeenCalledTimes(calls);
+
+  await act(async () =>
+    fireEvent.click(screen.getByRole('button', { name: 'Previous' })),
+  );
+  file.mockImplementation(() =>
+    ok({ Items: [{ ...row, status: 'COMPLETE' }] }),
+  );
+  await act(async () => vi.advanceTimersByTimeAsync(10000));
+
+  expect(screen.getByText('new recording')).toBeTruthy();
+
+  await act(async () => vi.advanceTimersByTimeAsync(20000));
+
+  expect(file).toHaveBeenCalledTimes(calls + 2);
 });
 
 it('ignores a response from a previous page load after a submission resets the page', async () => {

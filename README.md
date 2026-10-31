@@ -29,7 +29,7 @@ sam deploy --guided
 
 Set the `SourceVersion` parameter to the Git SHA to deploy. CodeBuild clones this public repo at that SHA to build the frontend ([details](src/WebsiteBuildTrigger/README.md)), so the commit must be pushed. Wait for the `RecordingsByCreatedAt` index to become `ACTIVE`, then open `FrontendURL` from the stack outputs. CloudFormation can finish its update before an added index is ready.
 
-Only new recordings are indexed; existing data is left unchanged.
+Only recordings created with this version appear in the library. Older metadata and audio remain in AWS but cannot be listed or deleted through the app. There is no migration or automatic cleanup; this is a single-user test app.
 
 ## Site password
 

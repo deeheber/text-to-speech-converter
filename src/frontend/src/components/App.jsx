@@ -77,7 +77,9 @@ function App({ onLocked }) {
         });
         setError('');
         delay = 10000;
-        again = Items.some(active) || pendingIds.current.size > 0;
+        again =
+          Items.some(active) ||
+          (target.cursor === null && pendingIds.current.size > 0);
       } catch (err) {
         if (!subscribed) {
           return;
@@ -151,7 +153,7 @@ function App({ onLocked }) {
           Lock
         </button>
       </div>
-      <Form onAccepted={accepted} onLocked={onLocked} />
+      <Form onAccepted={accepted} onChecked={checked} onLocked={onLocked} />
       {error && (
         <div role="alert">
           {error}{' '}

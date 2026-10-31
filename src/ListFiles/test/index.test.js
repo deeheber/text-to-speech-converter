@@ -11,11 +11,7 @@ import {
   PollyClient,
   GetSpeechSynthesisTaskCommand,
 } from '@aws-sdk/client-polly';
-import {
-  S3Client,
-  HeadObjectCommand,
-  ListObjectsV2Command,
-} from '@aws-sdk/client-s3';
+import { S3Client, ListObjectsV2Command } from '@aws-sdk/client-s3';
 import { mockClient } from 'aws-sdk-client-mock';
 import { handler } from '../index.js';
 
@@ -169,11 +165,11 @@ test('rejects invalid pagination keys and IDs without AWS calls', async () => {
   assert.equal(database.calls().length, 0);
 });
 
-for (const [taskStatus, status] of [
-  ['scheduled', 'QUEUED'],
-  ['inProgress', 'PROCESSING'],
-  ['completed', 'COMPLETE'],
-  ['failed', 'FAILED'],
+for (const [taskStatus, status, revision] of [
+  ['scheduled', 'QUEUED', 1],
+  ['inProgress', 'PROCESSING', 2],
+  ['completed', 'COMPLETE', 2],
+  ['failed', 'FAILED', 2],
 ]) {
   test(`refreshes ${taskStatus} with a guarded write and only exposes a complete download`, async () => {
     polly
@@ -193,7 +189,7 @@ for (const [taskStatus, status] of [
       /attribute_not_exists\(deleting\)/,
     );
     assert.equal(update.ExpressionAttributeValues[':before'], 1);
-    assert.equal(update.ExpressionAttributeValues[':revision'], 2);
+    assert.equal(update.ExpressionAttributeValues[':revision'], revision);
   });
 }
 
@@ -201,19 +197,40 @@ test('expired task history recovers a stored object, but missing output stays UN
   polly
     .on(GetSpeechSynthesisTaskCommand)
     .rejects({ name: 'SynthesisTaskNotFoundException' });
-  storage.on(HeadObjectCommand).resolves({});
+  storage.on(ListObjectsV2Command).resolves({ Contents: [{ Key: key }] });
 
   assert.equal((await parse()).Items[0].status, 'COMPLETE');
 
   items = [row()];
-  storage
-    .on(HeadObjectCommand)
-    .rejects({ name: 'NotFound', $metadata: { httpStatusCode: 404 } });
+  storage.on(ListObjectsV2Command).resolves({ Contents: [] });
 
   const page = await parse();
 
   assert.equal(page.Items[0].status, 'UNKNOWN');
   assert.ok(!('url' in page.Items[0]));
+  assert.equal(
+    storage.commandCalls(ListObjectsV2Command)[0].args[0].input.Prefix,
+    key,
+  );
+});
+
+test('unrecognized output URIs do not block task status updates or completed-output recovery', async () => {
+  for (const [TaskStatus, status] of [
+    ['inProgress', 'PROCESSING'],
+    ['failed', 'FAILED'],
+    ['completed', 'COMPLETE'],
+  ]) {
+    items = [row({ objectKey: undefined })];
+    polly.on(GetSpeechSynthesisTaskCommand).resolves({
+      SynthesisTask: { TaskStatus, OutputUri: 'not a URL' },
+    });
+    storage.on(ListObjectsV2Command).resolves({ Contents: [{ Key: key }] });
+
+    const page = await parse();
+
+    assert.equal(page.Items[0].status, status);
+    assert.equal('url' in page.Items[0], status === 'COMPLETE');
+  }
 });
 
 test('lost task IDs recover exactly one matching output and never infer failure from absence or ambiguity', async () => {
@@ -369,6 +386,44 @@ test('conditional refresh conflicts read the current record and never recreate d
   database.on(GetCommand).resolves({ Item: row({ status: 'COMPLETE' }) });
 
   assert.equal((await parse()).Items[0].status, 'COMPLETE');
+});
+
+test('a failed re-read after a refresh conflict preserves the rest of the page', async () => {
+  items.push(
+    row({
+      id: '22345678-1234-4123-8123-123456789abc',
+      status: 'FAILED',
+    }),
+  );
+  database
+    .on(UpdateCommand)
+    .rejects({ name: 'ConditionalCheckFailedException' });
+  database.on(GetCommand).rejects({ name: 'TimeoutError' });
+
+  const response = await handler({});
+  const page = JSON.parse(response.body);
+
+  assert.equal(response.statusCode, 200);
+  assert.deepEqual(
+    page.Items.map((item) => item.status),
+    ['QUEUED', 'FAILED'],
+  );
+});
+
+test('unchanged status refreshes update fairness timestamps without invalidating a deletion revision', async () => {
+  items = [row({ status: 'UNKNOWN', taskId: undefined, objectKey: undefined })];
+  storage.on(ListObjectsV2Command).resolves({ Contents: [] });
+
+  await parse();
+
+  assert.equal(items[0].revision, 2);
+  const checkedAt = items[0].lastCheckedAt;
+
+  mock.method(Date, 'now', () => checkedAt + 1000);
+  await parse();
+
+  assert.equal(items[0].revision, 2);
+  assert.equal(items[0].lastCheckedAt, checkedAt + 1000);
 });
 
 test('single-record lookup returns public metadata and uses a consistent read', async () => {

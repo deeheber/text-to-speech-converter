@@ -255,6 +255,9 @@ test('background submission is bounded and the ordered index and status route ar
   assert.ok(
     !policies.flatMap((s) => [].concat(s.Action)).includes('dynamodb:Scan'),
   );
+  assert.ok(
+    !policies.flatMap((s) => [].concat(s.Action)).includes('s3:GetObject'),
+  );
 
   for (const name of ['ListFiles', 'DeleteFile']) {
     const list = secretStatements(resources[name]).find(
