@@ -1,129 +1,96 @@
 # text-to-speech-converter
 
-## Summary
-This is an application that takes in text and outputs an audio file of that text. Written with US-English in mind, so it might not convert as expected for other languages.
+Converts text to downloadable MP3 audio with Amazon Polly. Written for US English; other languages may not convert well.
 
-My deployed version [here](https://d21fkyflmuqkf4.cloudfront.net/). Feel free to add your own things to convert to audio, download files, and delete files.
+[My deployed version](https://d21fkyflmuqkf4.cloudfront.net/) is password protected. To try it, [ask me](https://danielleheberling.xyz/) for the password. Audio links are public, so they can be shared.
 
-### Technologies Used
-- [Node](https://nodejs.org/)
-- [ReactJS](https://reactjs.org/)
-- [AWS](https://aws.amazon.com/)
-  - [AWS SAM](https://aws.amazon.com/serverless/sam/)
-  - CloudFormation
-  - S3
-  - API Gateway (HTTP API)
-  - Lambda
-  - DynamoDB
-  - Polly
-  - CodeBuild
-
-### Architecture Diagram
+## Architecture
 
 ```text
 Browser ── CloudFront ── S3 (frontend)
-   │            └────── S3 (recordings)
+   │            └────── S3 (recordings, public *.mp3 links)
    │                         ▲
    └── API Gateway ── Lambda ─┤
-                        ├──── DynamoDB
-                        └──── Polly
+         │              ├──── DynamoDB
+         │              └──── Polly
+         └── TokenAuthorizer (Lambda) ── Secrets Manager
 
 CodeBuild ── S3 (frontend)
 ```
 
-CloudFront serves both private S3 buckets over HTTPS using Origin Access Control.
+## Deploy
 
-
-### Directions To Run
-Requires Node.js 24 and an up-to-date AWS SAM CLI.
-
-1. Clone this repo (note: this script is designed to work with public Github repos, it might possibly also work with public Bitbucket and public Gitlab repos, but it hasn't been tested)
-2. Deploy the stack via the AWS SAM CLI. Getting started directions [here](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-install.html). TL;DR run [`sam build`](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-cli-command-reference-sam-build.html) and [`sam deploy --guided`](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-cli-command-reference-sam-deploy.html).
-
-3. Open `FrontendURL` from the CloudFormation stack outputs (`https://<distribution-domain>.cloudfront.net/`).
-
-### Site password
-The site is gated by one shared password. The stack creates it as a generated secret; the secret ARNs are in the stack outputs (`ApiPasswordSecretArn` and `TokenSigningKeySecretArn`).
-
-- **Get the password:** `aws secretsmanager get-secret-value --secret-id <ApiPasswordSecretArn> --query SecretString --output text`
-- **Change the password:** `aws secretsmanager put-secret-value --secret-id <ApiPasswordSecretArn> --secret-string '<new password>'`. Existing tokens stay valid until they expire.
-- **Sign out all devices:** run `put-secret-value` on the signing key secret (`<TokenSigningKeySecretArn>`) with a new random value. This takes effect within about 10 minutes.
-- **Lock is local:** the Lock button only removes the token from this browser. It does not revoke the token.
-- **Token lifetime:** set by the `TokenTtlHours` stack parameter (default 168 hours).
-- **Deploy order:** deploy the API and frontend changes together. Deploying the API change alone breaks the deployed frontend, because it sends no token.
-
-### Backend API Endpoints
-#### POST /login
-Public and throttled. Body `{"password": "<string>"}`; returns `{"token", "expiresAt"}`. Every other route needs the `Authorization` header set to a token from `/login`.
-
-#### GET /voices
-Populates the voices dropdown list
-
-#### GET /file
-Gets all files and fills the table with existing text to speech conversations
-
-#### DELETE /file/{id}
-Deletes a file
-
-#### POST /file
-Creates a new text to speech conversion
-
-### Running the Frontend Locally against a Deployed Backend
-1. Deploy the app
-2. `cd src/frontend` && `npm ci`
-3. create a new file under `src/frontend/src` and name it `config.js`. Find you ApiURL from the CloudFormation stack Outputs...should look something like `https://6wpbpyxfgf.execute-api.us-east-1.amazonaws.com`. Add the following to the file
-  ```
-  const apiRef =  {
-    backendAPI: 'Add your backend API URL here'
-  };
-
-  export default apiRef;
-  ```
-4. `npm start`
-5. The app prompts for the site password (see [Site password](#site-password) for how to read it). The session is kept in `localStorage` under `tts.session` until it expires or you press Lock.
-
-Vite runs on port 3000. `npm run production` reads `API_URL` and builds into `src/frontend/build`; `npm run lint` checks the frontend.
-
-### Tests
-
-From the repo root:
+Requires Node.js 24 and the [AWS SAM CLI](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-install.html).
 
 ```sh
-npm ci --prefix src/CreateNewFile
-npm test --prefix src/CreateNewFile
-npm ci --prefix src/ListFiles
-npm test --prefix src/ListFiles
-npm ci --prefix src/GetVoices
-npm test --prefix src/GetVoices
-npm ci --prefix src/WebsiteBuildTrigger
-npm test --prefix src/WebsiteBuildTrigger
-npm ci --prefix src/DeleteFile
-npm test --prefix src/DeleteFile
-npm ci --prefix src/Auth
-npm test --prefix src/Auth
-npm ci --prefix test/template
-npm test --prefix test/template
-npm ci --prefix src/frontend
-npm test --prefix src/frontend
+sam build
+sam deploy --guided
 ```
 
-AWS calls are mocked; no AWS credentials are needed.
+Set the `SourceVersion` parameter to the Git SHA to deploy. CodeBuild clones this public repo at that SHA to build the frontend ([details](src/WebsiteBuildTrigger/README.md)), so the commit must be pushed. Then open `FrontendURL` from the stack outputs.
 
-### Known Limitations For Larger Requests
-- Lambda has [limits](https://docs.aws.amazon.com/lambda/latest/dg/limits.html) for the `/tmp` directory storage. Currently the template is set to the default value which is 512mb. For an extra cost, you can up this value by adding the [EphemeralStorage](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-resource-function.html#sam-function-ephemeralstorage) property with the storage value that you want to the `CreateNewFile` function.
-- Pagination is not in place for `ListFiles`, but you probably don't want to scan a very very large dynamoDB table and return all the results anyway bc it can get very $$$.
+## Site password
 
-### Outstanding TODO Items / Open Bugs
-See [open issues](https://github.com/deeheber/text-to-speech-converter/issues)
+One shared password protects the API. The password and the token-signing key are generated at deploy time; their ARNs are in the stack outputs.
 
-### Logging Issues
-If you find a bug or have a question, feel free to open a new issue and our maintainers will reply as soon as they possibly can. Please describe the issue including steps to reproduce if there are any.
+| Task | Command |
+|---|---|
+| Get the password | `aws secretsmanager get-secret-value --secret-id <ApiPasswordSecretArn> --query SecretString --output text` |
+| Change the password (existing tokens stay valid until they expire) | `aws secretsmanager put-secret-value --secret-id <ApiPasswordSecretArn> --secret-string "$(openssl rand -base64 48 \| tr -dc 'A-Za-z0-9' \| head -c 32)"` |
+| Sign out every device (takes effect within ~10 minutes) | `aws secretsmanager put-secret-value --secret-id <TokenSigningKeySecretArn> --secret-string "$(openssl rand -base64 48 \| tr -dc 'A-Za-z0-9' \| head -c 64)"` |
 
-### Pull Request Process
-1. Fork the respository
-2. Make any changes you'd like
-3. Open a new PR against `main` with a description of the proposed changes as well as any other information you find relevant.
-4. If your PR fixes an open issue be sure to write `fixes #[ issue number here ]`
+- Tokens last `TokenTtlHours` (stack parameter, default 168).
+- The Lock button only forgets the token in this browser; it doesn't revoke it.
 
-### Finding Help
-For questions not covered here, visit [my website](https://danielleheberling.xyz/) for email and social links in the footer.
+## API
+
+All routes except `/login` need `Authorization: <token>`.
+
+| Route | Purpose |
+|---|---|
+| `POST /login` | `{"password": "..."}` → `{"token", "expiresAt"}` |
+| `GET /voices` | Voices for the dropdown |
+| `GET /file` | List conversions |
+| `POST /file` | Create a conversion |
+| `DELETE /file/{id}` | Delete a conversion |
+
+## Run the frontend locally
+
+Uses a deployed backend, whose CORS settings allow `http://localhost:3000`.
+
+1. `cd src/frontend && npm ci`
+2. Create `src/frontend/src/config.js` (gitignored) with the `ApiURL` stack output:
+
+   ```js
+   const apiRef = {
+     backendAPI: 'https://<api-id>.execute-api.<region>.amazonaws.com',
+   };
+
+   export default apiRef;
+   ```
+
+3. `npm start`, then open http://localhost:3000 and enter the site password.
+
+Don't run `npm run production` locally. It's for CodeBuild and overwrites `config.js` from `API_URL`.
+
+## Tests
+
+No AWS credentials needed; AWS calls are mocked.
+
+```sh
+for p in src/CreateNewFile src/ListFiles src/GetVoices src/DeleteFile src/WebsiteBuildTrigger src/Auth test/template src/frontend; do
+  npm ci --prefix "$p" && npm test --prefix "$p" || break
+done
+sam validate --lint
+```
+
+## Known limitations
+
+- `CreateNewFile` uses Lambda's default 512 MB `/tmp`. For very large requests, add [EphemeralStorage](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-resource-function.html#sam-function-ephemeralstorage).
+- `GET /file` scans the whole DynamoDB table with no pagination.
+
+## Contributing
+
+Bugs and questions: [open an issue](https://github.com/deeheber/text-to-speech-converter/issues) with steps to reproduce. Open PRs against `main`, with `fixes #<issue>` if one applies.
+
+For anything else, contact links are in the footer of [my website](https://danielleheberling.xyz/).
