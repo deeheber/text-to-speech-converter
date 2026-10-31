@@ -14,7 +14,7 @@ import {
 import { chunkText } from './chunkText.mjs';
 
 export const handler = async (message) => {
-  console.log('CreateNewFile invoked  with  message: ', message);
+  console.log('CreateNewFile invoked', { requestId: message.requestContext?.requestId, routeKey: message.routeKey });
 
   let data;
   try {

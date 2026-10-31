@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import util from 'node:util';
 import { afterEach, beforeEach, mock, test } from 'node:test';
 
 import { PollyClient, DescribeVoicesCommand } from '@aws-sdk/client-polly';
@@ -35,4 +36,23 @@ test('returns Polly errors without throwing while logging the voice count', asyn
     assert.equal(response.statusCode, expectedStatus);
     assert.equal(JSON.parse(response.body), error.message);
   }
+});
+
+test('does not log the authorization header', async () => {
+  mock.restoreAll();
+  const lines = [];
+  for (const m of ['log', 'info', 'warn', 'error', 'debug']) {
+    mock.method(console, m, (...args) => {
+      lines.push(args.map((a) => (typeof a === 'string' ? a : util.inspect(a, { depth: null }))).join(' '));
+    });
+  }
+  polly.on(DescribeVoicesCommand).resolves({ Voices: [] });
+  await handler({
+    headers: { authorization: 'SECRET-TOKEN-123' },
+    requestContext: { requestId: 'req-1' },
+    routeKey: 'GET /x',
+   
+  });
+  assert.ok(lines.some((l) => l.includes('req-1')));
+  assert.ok(lines.every((l) => !l.includes('SECRET-TOKEN-123')));
 });

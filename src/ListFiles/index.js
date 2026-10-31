@@ -2,7 +2,7 @@ import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient, ScanCommand } from '@aws-sdk/lib-dynamodb';
 
 export const handler = async (message) => {
-  console.log('Get file invoked with message: ', message);
+  console.log('ListFiles invoked', { requestId: message.requestContext?.requestId, routeKey: message.routeKey });
 
   let response;
   let statusCode;
