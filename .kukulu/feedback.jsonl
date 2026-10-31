@@ -1,0 +1,1 @@
+{"at":"2026-10-31T17:19:34.475Z","stage":"implement","round":0,"category":"tool-refusal","message":"no-build-references constraint flags .gitignore line \".kukulu/implement.lock\" (added by run_start) because it matches Kukulu case-insensitively; verify reports ok:false regardless of the task.","source":"agent"}
