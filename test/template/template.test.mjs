@@ -163,3 +163,30 @@ test('TokenTtlHours defaults to 168', () => {
   assert.equal(template.Parameters.TokenTtlHours.Type, 'Number');
   assert.equal(template.Parameters.TokenTtlHours.MinValue, 1);
 });
+
+test('background submission is bounded and the ordered index and status route are wired', () => {
+  const create = resources.CreateNewFile.Properties;
+  assert.equal(create.Timeout, 15);
+  assert.equal(create.MemorySize, 256);
+  const actions = secretStatements(resources.CreateNewFile).flatMap((s) => [].concat(s.Action));
+  assert.ok(actions.includes('polly:StartSpeechSynthesisTask'));
+  assert.ok(!actions.includes('polly:SynthesizeSpeech'));
+  const index = resources.Table.Properties.GlobalSecondaryIndexes;
+  assert.equal(index.length, 1);
+  assert.equal(index[0].IndexName, 'RecordingsByCreatedAt');
+  assert.deepEqual(index[0].KeySchema, [{ AttributeName: 'library', KeyType: 'HASH' }, { AttributeName: 'orderKey', KeyType: 'RANGE' }]);
+  assert.equal(index[0].Projection.ProjectionType, 'ALL');
+  const status = httpApiEvents.find((e) => e.props.Path === '/file/{id}' && e.props.Method === 'GET');
+  assert.equal(status.name, 'ListFiles');
+  assert.ok(resources.HttpApi.Properties.DefinitionBody.paths['/file/{id}'].get);
+  assert.deepEqual(resources.ListFiles.Properties.Environment.Variables.BUCKET_NAME, { Ref: 'FileStore' });
+  const policies = secretStatements(resources.ListFiles);
+  const query = policies.find((s) => s.Action === 'dynamodb:Query');
+  assert.deepEqual(query.Resource, { 'Fn::Sub': '${Table.Arn}/index/RecordingsByCreatedAt' });
+  assert.ok(!policies.flatMap((s) => [].concat(s.Action)).includes('dynamodb:Scan'));
+  for (const name of ['ListFiles', 'DeleteFile']) {
+    const list = secretStatements(resources[name]).find((s) => s.Action === 's3:ListBucket');
+    assert.deepEqual(list.Resource, { 'Fn::GetAtt': 'FileStore.Arn' });
+    assert.ok(list.Condition.StringLike['s3:prefix'].startsWith('????????-'));
+  }
+});

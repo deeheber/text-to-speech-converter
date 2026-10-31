@@ -21,10 +21,23 @@ Resources:
       AttributeDefinitions:
         - AttributeName: id
           AttributeType: S
+        - AttributeName: library
+          AttributeType: S
+        - AttributeName: orderKey
+          AttributeType: S
       BillingMode: PAY_PER_REQUEST
       KeySchema:
         - AttributeName: id
           KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: RecordingsByCreatedAt
+          KeySchema:
+            - AttributeName: library
+              KeyType: HASH
+            - AttributeName: orderKey
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
       StreamSpecification:
         StreamViewType: NEW_AND_OLD_IMAGES
       TableName: !Sub ${AWS::StackName}-Table
@@ -145,17 +158,14 @@ Resources:
       CodeUri: src/CreateNewFile
       Handler: index.handler
       Runtime: nodejs24.x
-      MemorySize: 3008
-      Timeout: 300
+      MemorySize: 256
+      Timeout: 15
       Tracing: Active
       Policies:
         - Version: 2012-10-17
           Statement:
             - Effect: Allow
-              Resource: !Join
-                - ''
-                - - !GetAtt FileStore.Arn
-                  - /*
+              Resource: !Sub '${FileStore.Arn}/????????-????-4???-????-????????????.*.mp3'
               Action:
                 - s3:PutObject
         - Version: 2012-10-17
@@ -165,12 +175,13 @@ Resources:
               Action:
                 - dynamodb:UpdateItem
                 - dynamodb:PutItem
+                - dynamodb:GetItem
         - Version: 2012-10-17
           Statement:
             - Effect: Allow
               Resource: '*'
               Action:
-                - polly:SynthesizeSpeech
+                - polly:StartSpeechSynthesisTask
         - AWSXrayWriteOnlyAccess
       Environment:
         Variables:
@@ -212,15 +223,19 @@ Resources:
               Action:
                 - dynamodb:GetItem
                 - dynamodb:DeleteItem
+                - dynamodb:UpdateItem
         - Version: 2012-10-17
           Statement:
             - Effect: Allow
-              Resource: !Join
-                - ''
-                - - !GetAtt FileStore.Arn
-                  - /*
+              Resource: !Sub '${FileStore.Arn}/????????-????-4???-????-????????????.*.mp3'
               Action:
                 - s3:DeleteObject
+            - Effect: Allow
+              Resource: !GetAtt FileStore.Arn
+              Action: s3:ListBucket
+              Condition:
+                StringLike:
+                  s3:prefix: '????????-????-4???-????-????????????.*'
       Environment:
         Variables:
           BUCKET_NAME: !Ref FileStore
@@ -291,17 +306,43 @@ Resources:
               Resource: !GetAtt Table.Arn
               Action:
                 - dynamodb:GetItem
-                - dynamodb:Scan
+                - dynamodb:UpdateItem
+            - Effect: Allow
+              Resource: !Sub '${Table.Arn}/index/RecordingsByCreatedAt'
+              Action: dynamodb:Query
+        - Version: 2012-10-17
+          Statement:
+            - Effect: Allow
+              Resource: '*'
+              Action: polly:GetSpeechSynthesisTask
+            - Effect: Allow
+              Resource: !Sub '${FileStore.Arn}/????????-????-4???-????-????????????.*.mp3'
+              Action: s3:GetObject
+            - Effect: Allow
+              Resource: !GetAtt FileStore.Arn
+              Action: s3:ListBucket
+              Condition:
+                StringLike:
+                  s3:prefix: '????????-????-4???-????-????????????.*'
       Environment:
         Variables:
           AUDIO_BASE_URL: !Sub https://${Distribution.DomainName}
           TABLE_NAME: !Ref Table
           TABLE_ARN: !GetAtt Table.Arn
+          BUCKET_NAME: !Ref FileStore
       Events:
         HttpApiGETfile:
           Type: HttpApi
           Properties:
             Path: /file
+            Method: GET
+            ApiId: !Ref HttpApi
+            PayloadFormatVersion: '2.0'
+            TimeoutInMillis: 29000
+        HttpApiGETfileid:
+          Type: HttpApi
+          Properties:
+            Path: /file/{id}
             Method: GET
             ApiId: !Ref HttpApi
             PayloadFormatVersion: '2.0'
@@ -510,6 +551,8 @@ Resources:
             post:
               responses: {}
           /file/{id}:
+            get:
+              responses: {}
             delete:
               responses: {}
           /login:
