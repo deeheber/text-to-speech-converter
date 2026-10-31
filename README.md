@@ -24,6 +24,8 @@ My deployed version [here](http://text-to-speech-frontend.s3-website-us-west-2.a
 
 
 ### Directions To Run
+Requires Node.js 24 and an up-to-date AWS SAM CLI.
+
 1. Clone this repo (note: this script is designed to work with public Github repos, it might possibly also work with public Bitbucket and public Gitlab repos, but it hasn't been tested)
 2. Deploy the stack via the AWS SAM CLI. Getting started directions [here](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-install.html). TL;DR run [`sam build`](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-cli-command-reference-sam-build.html) and [`sam deploy --guided`](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-cli-command-reference-sam-deploy.html).
 3. Navigate to the url for your frontend. It'll be in the CloudFormation stack Outputs...should be something like: `http://{your stack name}-frontend.s3-website-{your region}.amazonaws.com/`
@@ -43,7 +45,7 @@ Creates a new text to speech conversion
 
 ### Running the Frontend Locally against a Deployed Backend
 1. Deploy the app
-2. `cd src/frontend` && `npm install`
+2. `cd src/frontend` && `npm ci`
 3. create a new file under `src/frontend/src` and name it `config.js`. Find you ApiURL from the CloudFormation stack Outputs...should look something like `https://6wpbpyxfgf.execute-api.us-east-1.amazonaws.com`. Add the following to the file
   ```
   const apiRef =  {
@@ -53,6 +55,23 @@ Creates a new text to speech conversion
   export default apiRef;
   ```
 4. `npm start`
+
+Vite runs on port 3000. `npm run production` reads `API_URL` and builds into `src/frontend/build`; `npm run lint` checks the frontend.
+
+### Tests
+
+From the repo root:
+
+```sh
+npm ci --prefix src/CreateNewFile
+npm test --prefix src/CreateNewFile
+npm ci --prefix src/GetVoices
+npm test --prefix src/GetVoices
+npm ci --prefix src/WebsiteBuildTrigger
+npm test --prefix src/WebsiteBuildTrigger
+```
+
+AWS calls are mocked; no AWS credentials are needed.
 
 ### Known Limitations For Larger Requests
 - Lambda has [limits](https://docs.aws.amazon.com/lambda/latest/dg/limits.html) for the `/tmp` directory storage. Currently the template is set to the default value which is 512mb. For an extra cost, you can up this value by adding the [EphemeralStorage](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-resource-function.html#sam-function-ephemeralstorage) property with the storage value that you want to the `CreateNewFile` function.

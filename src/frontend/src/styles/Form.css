@@ -4,6 +4,7 @@
 }
 
 select {
+  appearance: none;
   display: block;
   margin-bottom: 2%;
 }

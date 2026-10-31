@@ -11,13 +11,14 @@ function rowsReducer(state, action) {
       return action.payload;
     case 'add':
       return [action.payload, ...state];
-    case 'remove':
+    case 'remove': {
       const rowIndex = state.findIndex((row) => row.id === action.payload.id);
       if (rowIndex < 0) {
         throw new Error(`Row with id ${action.payload.id} does not exist!`);
       }
 
       return [...state.slice(0, rowIndex), ...state.slice(rowIndex + 1)];
+    }
     default:
       throw new Error();
   }

@@ -2,10 +2,16 @@
   "name": "create-new-file",
   "type": "module",
   "version": "1.0.0",
+  "scripts": {
+    "test": "node --test"
+  },
   "dependencies": {
-    "@aws-sdk/client-dynamodb": "^3.485.0",
-    "@aws-sdk/client-polly": "^3.485.0",
-    "@aws-sdk/client-s3": "^3.485.0",
-    "@aws-sdk/lib-dynamodb": "^3.485.0"
+    "@aws-sdk/client-dynamodb": "^3.1161.0",
+    "@aws-sdk/client-polly": "^3.1161.0",
+    "@aws-sdk/client-s3": "^3.1161.0",
+    "@aws-sdk/lib-dynamodb": "^3.1161.0"
+  },
+  "devDependencies": {
+    "aws-sdk-client-mock": "4.1.0"
   }
 }

@@ -2,7 +2,10 @@
   "name": "websitebuildtrigger",
   "type": "module",
   "version": "1.0.0",
+  "scripts": {
+    "test": "node --test"
+  },
   "dependencies": {
-    "@aws-sdk/client-codebuild": "^3.488.0"
+    "@aws-sdk/client-codebuild": "^3.1161.0"
   }
 }

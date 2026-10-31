@@ -35,7 +35,7 @@ Resources:
         - arm64
       CodeUri: src/CreateNewFile
       Handler: index.handler
-      Runtime: nodejs22.x
+      Runtime: nodejs24.x
       MemorySize: 3008
       Timeout: 300
       Tracing: Active
@@ -90,7 +90,7 @@ Resources:
         - arm64
       CodeUri: src/DeleteFile
       Handler: index.handler
-      Runtime: nodejs22.x
+      Runtime: nodejs24.x
       MemorySize: 3008
       Timeout: 45
       Tracing: Active
@@ -140,7 +140,7 @@ Resources:
         - arm64
       CodeUri: src/GetVoices
       Handler: index.handler
-      Runtime: nodejs22.x
+      Runtime: nodejs24.x
       MemorySize: 3008
       Timeout: 60
       Tracing: Active
@@ -172,7 +172,7 @@ Resources:
         - arm64
       CodeUri: src/ListFiles
       Handler: index.handler
-      Runtime: nodejs22.x
+      Runtime: nodejs24.x
       MemorySize: 3008
       Timeout: 30
       Tracing: Active
@@ -207,7 +207,7 @@ Resources:
         Type: NO_ARTIFACTS
       Environment:
         ComputeType: BUILD_GENERAL1_SMALL
-        Image: aws/codebuild/standard:7.0
+        Image: aws/codebuild/standard:8.0
         Type: LINUX_CONTAINER
         EnvironmentVariables:
           - Name: API_URL
@@ -221,7 +221,7 @@ Resources:
             phases:
               install:
                 runtime-versions:
-                  nodejs: 22
+                  nodejs: 24
                 commands:
                   - git clone ${SourceLocation} repo
                   - cd repo
@@ -229,13 +229,13 @@ Resources:
                   - cd ${SourceDirectory}
               pre_build:
                 commands:
-                  - npm install --omit=dev
+                  - npm ci --include=dev
               build:
                 commands:
                   - ${BuildCommand}
               post_build:
                 commands:
-                  - if [ $CODEBUILD_BUILD_SUCCEEDING == 0 ]; then exit 1; fi
+                  - if [ "$CODEBUILD_BUILD_SUCCEEDING" = 0 ]; then exit 1; fi
                   - cd "${!CODEBUILD_SRC_DIR}/repo"
                   - aws s3 sync '${PublishDirectory}' 's3://${DestinationBucketName}' --acl public-read --cache-control 'max-age=0, must-revalidate, public' --no-progress --delete
           - PublishDirectory: src/frontend/build
@@ -259,7 +259,7 @@ Resources:
             - SUCCEEDED
             - FAILED
             - FAULT
-            - STOPPPED
+            - STOPPED
             - TIMED_OUT
           project-name:
             - !Ref Website
@@ -358,7 +358,7 @@ Resources:
         - arm64
       CodeUri: src/WebsiteBuildTrigger
       Handler: index.handler
-      Runtime: nodejs22.x
+      Runtime: nodejs24.x
       MemorySize: 5000
       Timeout: 30
       Tracing: Active
