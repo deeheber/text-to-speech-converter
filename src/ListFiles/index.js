@@ -23,7 +23,12 @@ export const handler = async (message) => {
     /* TODO: Figure out if there's a way to sort scan results from dynamo
      * Initial search showed this may not be an option and/or is hard to implement
      */
-    const sortedItems = Items.sort((a, b) => b.createdAt - a.createdAt);
+    const sortedItems = Items.map(({ url, ...item }) => ({
+      ...item,
+      ...(item.status === 'COMPLETE' ? {
+        url: `${process.env.AUDIO_BASE_URL}/${encodeURIComponent(`${item.id}.mp3`)}`,
+      } : {}),
+    })).sort((a, b) => b.createdAt - a.createdAt);
     console.log('SORTED RESULTS FROM DB ', sortedItems);
     response = JSON.stringify({ Items: sortedItems });
   } catch (err) {

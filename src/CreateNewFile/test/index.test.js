@@ -23,6 +23,7 @@ let createdIds;
 
 beforeEach(() => {
   createdIds = [];
+  process.env.AUDIO_BASE_URL = 'https://audio.example.com';
   mock.method(console, 'log', () => {});
   database = mockClient(DynamoDBDocumentClient);
   database.rejects(new Error('Unexpected DynamoDB command'));
@@ -38,7 +39,7 @@ beforeEach(() => {
       Attributes: {
         id: input.Key.id,
         status: 'COMPLETE',
-        url: 'https://example.com/audio.mp3',
+        url: input.ExpressionAttributeValues[':url'],
       },
     }));
   database
@@ -113,7 +114,12 @@ test('keeps default and selected voices and the successful response format', asy
     );
     assert.equal(response.status, 'COMPLETE');
     assert.equal(response.id, createdIds.at(-1));
-    assert.equal(response.url, 'https://example.com/audio.mp3');
+    assert.equal(response.url, `https://audio.example.com/${response.id}.mp3`);
+    const upload = storage.commandCalls(PutObjectCommand).at(-1).args[0].input;
+    assert.ok(!('ACL' in upload));
+    assert.equal(upload.Key, `${response.id}.mp3`);
+    assert.equal(upload.ContentType, 'audio/mpeg');
+    assert.equal(upload.CacheControl, 'no-store');
     const input = polly.commandCalls(SynthesizeSpeechCommand).at(-1)
       .args[0].input;
     assert.equal(input.VoiceId, expectedVoice);

@@ -18,12 +18,107 @@ Resources:
     Type: AWS::S3::Bucket
     Properties:
       BucketName: !Sub ${AWS::StackName}-frontend
-      WebsiteConfiguration:
-        IndexDocument: index.html
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: BucketOwnerEnforced
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        IgnorePublicAcls: true
+        BlockPublicPolicy: true
+        RestrictPublicBuckets: true
   FileStore:
     Type: AWS::S3::Bucket
     Properties:
       BucketName: !Sub ${AWS::StackName}-filestore
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: BucketOwnerEnforced
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        IgnorePublicAcls: true
+        BlockPublicPolicy: true
+        RestrictPublicBuckets: true
+  OriginAccessControl:
+    Type: AWS::CloudFront::OriginAccessControl
+    Properties:
+      OriginAccessControlConfig:
+        Name: !Sub ${AWS::StackName}-s3
+        OriginAccessControlOriginType: s3
+        SigningBehavior: always
+        SigningProtocol: sigv4
+  AudioResponseHeaders:
+    Type: AWS::CloudFront::ResponseHeadersPolicy
+    Properties:
+      ResponseHeadersPolicyConfig:
+        Name: !Sub ${AWS::StackName}-audio
+        CustomHeadersConfig:
+          Items:
+            - Header: Cache-Control
+              Value: no-store
+              Override: true
+  Distribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Enabled: true
+        DefaultRootObject: index.html
+        ViewerCertificate:
+          CloudFrontDefaultCertificate: true
+        Origins:
+          - Id: frontend
+            DomainName: !GetAtt FrontEnd.RegionalDomainName
+            OriginAccessControlId: !Ref OriginAccessControl
+            S3OriginConfig:
+              OriginAccessIdentity: ''
+          - Id: audio
+            DomainName: !GetAtt FileStore.RegionalDomainName
+            OriginAccessControlId: !Ref OriginAccessControl
+            S3OriginConfig:
+              OriginAccessIdentity: ''
+        DefaultCacheBehavior:
+          TargetOriginId: frontend
+          ViewerProtocolPolicy: redirect-to-https
+          AllowedMethods: [GET, HEAD]
+          CachedMethods: [GET, HEAD]
+          CachePolicyId: 4135ea2d-6df8-44a3-9df3-4b5a84be39ad
+        CacheBehaviors:
+          - PathPattern: '*.mp3'
+            TargetOriginId: audio
+            ViewerProtocolPolicy: redirect-to-https
+            AllowedMethods: [GET, HEAD]
+            CachedMethods: [GET, HEAD]
+            CachePolicyId: 4135ea2d-6df8-44a3-9df3-4b5a84be39ad
+            ResponseHeadersPolicyId: !Ref AudioResponseHeaders
+  FrontEndPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref FrontEnd
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: cloudfront.amazonaws.com
+            Action: s3:GetObject
+            Resource: !Sub '${FrontEnd.Arn}/*'
+            Condition:
+              StringEquals:
+                AWS:SourceArn: !Sub arn:${AWS::Partition}:cloudfront::${AWS::AccountId}:distribution/${Distribution}
+  FileStorePolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref FileStore
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: cloudfront.amazonaws.com
+            Action: s3:GetObject
+            Resource: !Sub '${FileStore.Arn}/*'
+            Condition:
+              StringEquals:
+                AWS:SourceArn: !Sub arn:${AWS::Partition}:cloudfront::${AWS::AccountId}:distribution/${Distribution}
   CreateNewFile:
     Type: AWS::Serverless::Function
     Properties:
@@ -49,7 +144,6 @@ Resources:
                   - /*
               Action:
                 - s3:PutObject
-                - s3:PutObjectAcl
         - Version: 2012-10-17
           Statement:
             - Effect: Allow
@@ -66,6 +160,7 @@ Resources:
         - AWSXrayWriteOnlyAccess
       Environment:
         Variables:
+          AUDIO_BASE_URL: !Sub https://${Distribution.DomainName}
           TABLE_NAME: !Ref Table
           TABLE_ARN: !GetAtt Table.Arn
           BUCKET_NAME: !Ref FileStore
@@ -96,8 +191,6 @@ Resources:
       Tracing: Active
       Policies:
         - AWSXrayWriteOnlyAccess
-        - S3CrudPolicy:
-            BucketName: !Ref FileStore
         - Version: 2012-10-17
           Statement:
             - Effect: Allow
@@ -187,6 +280,7 @@ Resources:
                 - dynamodb:Scan
       Environment:
         Variables:
+          AUDIO_BASE_URL: !Sub https://${Distribution.DomainName}
           TABLE_NAME: !Ref Table
           TABLE_ARN: !GetAtt Table.Arn
       Events:
@@ -200,7 +294,6 @@ Resources:
             TimeoutInMillis: 29000
   Website:
     Type: AWS::CodeBuild::Project
-    DependsOn: WebsiteRole
     Properties:
       Name: !Sub ${AWS::StackName}-Website
       Artifacts:
@@ -237,7 +330,7 @@ Resources:
                 commands:
                   - if [ "$CODEBUILD_BUILD_SUCCEEDING" = 0 ]; then exit 1; fi
                   - cd "${!CODEBUILD_SRC_DIR}/repo"
-                  - aws s3 sync '${PublishDirectory}' 's3://${DestinationBucketName}' --acl public-read --cache-control 'max-age=0, must-revalidate, public' --no-progress --delete
+                  - aws s3 sync '${PublishDirectory}' 's3://${DestinationBucketName}' --cache-control 'max-age=0, must-revalidate, public' --no-progress --delete
           - PublishDirectory: src/frontend/build
             BuildCommand: npm run production
             SourceDirectory: src/frontend
@@ -247,7 +340,6 @@ Resources:
           Value: !Sub ${AWS::StackName}
   WebsiteEvents:
     Type: AWS::Events::Rule
-    DependsOn: Website
     Properties:
       EventPattern:
         source:
@@ -268,7 +360,6 @@ Resources:
           Id: WebsiteBuildTrigger
   WebsiteEventsPermission:
     Type: AWS::Lambda::Permission
-    DependsOn: WebsiteEvents
     Properties:
       Action: lambda:InvokeFunction
       FunctionName: !GetAtt WebsiteBuildTrigger.Arn
@@ -313,7 +404,6 @@ Resources:
                   - s3:GetObject
                   - s3:ListBucket
                   - s3:PutObject
-                  - s3:PutObjectAcl
                 Resource:
                   - !Sub ${FrontEnd.Arn}/*
                   - !Sub ${FrontEnd.Arn}
@@ -340,7 +430,7 @@ Resources:
       FailOnWarnings: true
       CorsConfiguration:
         AllowOrigins:
-          - !Sub http://${AWS::StackName}-frontend.s3-website-${AWS::Region}.amazonaws.com
+          - !Sub https://${Distribution.DomainName}
           - http://localhost:3000
         AllowMethods:
           - '*'
@@ -392,5 +482,8 @@ Outputs:
     Description: The URL for the API
     Value: !Sub https://${HttpApi}.execute-api.${AWS::Region}.amazonaws.com
   FrontendURL:
-    Description: The URL of the S3 bucket containing the built frontend
-    Value: !GetAtt FrontEnd.WebsiteURL
+    Description: The HTTPS frontend URL
+    Value: !Sub https://${Distribution.DomainName}
+  AudioBaseURL:
+    Description: The HTTPS base URL for recordings
+    Value: !Sub https://${Distribution.DomainName}
