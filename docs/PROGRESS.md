@@ -19,7 +19,7 @@ Started: 2026-10-31T17:18:59.941Z
 - [x] P1-04 Add the Lock button and auth-error handling to App, Form and Table
 - [x] P1-05 Add the password gate and render it from index.jsx
 - [x] P1-06 Note the password prompt in the README's local-dev section
-- [ ] P1-07 Phase 1 checkpoint: push and list manual frontend checks
+- [x] P1-07 Phase 1 checkpoint: push and list manual frontend checks
 
 ## Log
 
@@ -91,3 +91,18 @@ Tests: 7 in PasswordGate.test.jsx. lock/handleUnlocked are useCallback-stable. i
 ### P1-06 — 3f305c3
 
 README: local-dev step 5 (password prompt, tts.session) and frontend test commands. Docs only.
+
+### P1-07 — 15cb582
+
+Push: done (git push -u origin HEAD).
+Manual check: NOT VERIFIED (human)
+On both localhost and the CloudFront URL:
+- wrong password shows the error and the right one unlocks
+- convert, list, download and delete all work
+- after a reload you stay unlocked and localStorage holds only tts.session
+- Lock clears the table
+- setting expiresAt to a past value then reloading shows the prompt
+- rotating the signing key returns you to the prompt
+- a shared *.mp3 link opens without the password
+- the console shows no password or token
+- re-run the Phase 0 API checks if they have not been done
