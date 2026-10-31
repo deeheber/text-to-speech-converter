@@ -1,6 +1,20 @@
 AWSTemplateFormatVersion: 2010-09-09
 Transform: AWS::Serverless-2016-10-31
 Resources:
+  ApiPassword:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: !Sub ${AWS::StackName}-api-password
+      GenerateSecretString:
+        PasswordLength: 32
+        ExcludePunctuation: true
+  TokenSigningKey:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: !Sub ${AWS::StackName}-token-signing-key
+      GenerateSecretString:
+        PasswordLength: 64
+        ExcludePunctuation: true
   Table:
     Type: AWS::DynamoDB::Table
     Properties:
@@ -407,6 +421,77 @@ Resources:
                 Resource:
                   - !Sub ${FrontEnd.Arn}/*
                   - !Sub ${FrontEnd.Arn}
+  Login:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-Login
+      Description: !Sub
+        - Stack ${AWS::StackName} Function ${ResourceName}
+        - ResourceName: Login
+      Architectures:
+        - arm64
+      CodeUri: src/Auth
+      Handler: login.handler
+      Runtime: nodejs24.x
+      MemorySize: 256
+      Timeout: 5
+      Tracing: Active
+      Policies:
+        - AWSXrayWriteOnlyAccess
+        - Version: 2012-10-17
+          Statement:
+            - Effect: Allow
+              Action: secretsmanager:GetSecretValue
+              Resource:
+                - !Ref ApiPassword
+                - !Ref TokenSigningKey
+      Environment:
+        Variables:
+          PASSWORD_SECRET_ARN: !Ref ApiPassword
+          SIGNING_KEY_SECRET_ARN: !Ref TokenSigningKey
+          TOKEN_TTL_HOURS: !Ref TokenTtlHours
+      Events:
+        HttpApiPOSTlogin:
+          Type: HttpApi
+          Properties:
+            Path: /login
+            Method: POST
+            ApiId: !Ref HttpApi
+            PayloadFormatVersion: '2.0'
+            Auth:
+              Authorizer: NONE
+  TokenAuthorizer:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-TokenAuthorizer
+      Description: !Sub
+        - Stack ${AWS::StackName} Function ${ResourceName}
+        - ResourceName: TokenAuthorizer
+      Architectures:
+        - arm64
+      CodeUri: src/Auth
+      Handler: authorizer.handler
+      Runtime: nodejs24.x
+      MemorySize: 256
+      Timeout: 5
+      Tracing: Active
+      Policies:
+        - AWSXrayWriteOnlyAccess
+        - Version: 2012-10-17
+          Statement:
+            - Effect: Allow
+              Action: secretsmanager:GetSecretValue
+              Resource: !Ref TokenSigningKey
+      Environment:
+        Variables:
+          SIGNING_KEY_SECRET_ARN: !Ref TokenSigningKey
+  TokenAuthorizerInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt TokenAuthorizer.Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub arn:${AWS::Partition}:execute-api:${AWS::Region}:${AWS::AccountId}:${HttpApi}/authorizers/*
   HttpApi:
     Type: AWS::Serverless::HttpApi
     Properties:
@@ -427,6 +512,9 @@ Resources:
           /file/{id}:
             delete:
               responses: {}
+          /login:
+            post:
+              responses: {}
       FailOnWarnings: true
       CorsConfiguration:
         AllowOrigins:
@@ -437,6 +525,24 @@ Resources:
         AllowHeaders:
           - Authorization
           - Content-Type
+      Auth:
+        DefaultAuthorizer: TokenAuthorizer
+        Authorizers:
+          TokenAuthorizer:
+            FunctionArn: !GetAtt TokenAuthorizer.Arn
+            AuthorizerPayloadFormatVersion: '2.0'
+            EnableSimpleResponses: true
+            Identity:
+              Headers:
+                - Authorization
+              ReauthorizeEvery: 300
+      DefaultRouteSettings:
+        ThrottlingRateLimit: 5
+        ThrottlingBurstLimit: 10
+      RouteSettings:
+        POST /login:
+          ThrottlingRateLimit: 1
+          ThrottlingBurstLimit: 3
   WebsiteBuildTrigger:
     Type: AWS::Serverless::Function
     Properties:
@@ -477,7 +583,18 @@ Parameters:
   SourceVersion:
     Type: String
     Description: Source version for deployment (i.e. Git SHA)
+  TokenTtlHours:
+    Type: Number
+    Description: Lifetime of a login token in hours
+    Default: 168
+    MinValue: 1
 Outputs:
+  ApiPasswordSecretArn:
+    Description: ARN of the secret holding the site password
+    Value: !Ref ApiPassword
+  TokenSigningKeySecretArn:
+    Description: ARN of the secret holding the token signing key
+    Value: !Ref TokenSigningKey
   ApiURL:
     Description: The URL for the API
     Value: !Sub https://${HttpApi}.execute-api.${AWS::Region}.amazonaws.com
