@@ -344,7 +344,7 @@ it('backs off polling errors and stops before issuing a request after session ex
   expect(file).toHaveBeenCalledTimes(2);
 });
 
-it('continues polling until an accepted recording appears, and disables deleting active jobs', async () => {
+it('polls until completion and updates the confirmation without clearing the next draft', async () => {
   vi.useFakeTimers();
   render(<App onLocked={vi.fn()} />);
   await act(async () => {});
@@ -354,6 +354,11 @@ it('continues polling until an accepted recording appears, and disables deleting
   await act(async () => fireEvent.submit(document.querySelector('form')));
 
   expect(file).toHaveBeenCalledTimes(2);
+  expect(screen.getByRole('status').textContent).toContain('Recording queued.');
+
+  fireEvent.change(screen.getByLabelText('Text to convert'), {
+    target: { value: 'My next recording' },
+  });
 
   file.mockImplementation(() => ok({ Items: [row] }));
   await act(async () => vi.advanceTimersByTimeAsync(10000));
@@ -362,15 +367,117 @@ it('continues polling until an accepted recording appears, and disables deleting
   expect(screen.getByRole('button', { name: 'X' }).disabled).toBe(true);
 
   file.mockImplementation(() =>
+    ok({ Items: [{ ...row, status: 'PROCESSING' }] }),
+  );
+  await act(async () => vi.advanceTimersByTimeAsync(10000));
+
+  expect(screen.getByRole('status').textContent).toContain(
+    'Recording processing.',
+  );
+
+  file.mockImplementation(() =>
     ok({ Items: [{ ...row, status: 'COMPLETE' }] }),
   );
   await act(async () => vi.advanceTimersByTimeAsync(10000));
 
   expect(screen.getByRole('button', { name: 'X' }).disabled).toBe(false);
+  expect(screen.getByRole('status').textContent).toContain(
+    'Recording complete.',
+  );
+  expect(screen.getByLabelText('Text to convert').value).toBe(
+    'My next recording',
+  );
 
   await act(async () => vi.advanceTimersByTimeAsync(20000));
 
-  expect(file).toHaveBeenCalledTimes(4);
+  expect(file).toHaveBeenCalledTimes(5);
+});
+
+it('only follows the submitted recording and retains its failure when leaving the page', async () => {
+  const props = { onAccepted: vi.fn(), onChecked: vi.fn(), onLocked: vi.fn() };
+  const view = render(<Form {...props} recordings={[]} />);
+  const user = userEvent.setup();
+
+  await user.type(screen.getByLabelText('Text to convert'), 'hello');
+  await user.click(screen.getByRole('button', { name: 'Submit', exact: true }));
+  await user.type(
+    screen.getByLabelText('Text to convert'),
+    'My next recording',
+  );
+
+  view.rerender(
+    <Form
+      {...props}
+      recordings={[
+        { ...row, id: 'other', status: 'FAILED', message: 'Unrelated failure' },
+      ]}
+    />,
+  );
+
+  expect(screen.getByRole('status').textContent).toContain('Recording queued.');
+
+  view.rerender(
+    <Form
+      {...props}
+      recordings={[
+        {
+          ...row,
+          status: 'FAILED',
+          message: 'Polly could not synthesize this recording.',
+        },
+      ]}
+    />,
+  );
+
+  expect(screen.getByRole('status').textContent).toBe(
+    'Polly could not synthesize this recording.',
+  );
+  expect(screen.getByLabelText('Text to convert').value).toBe(
+    'My next recording',
+  );
+
+  view.rerender(<Form {...props} recordings={[]} />);
+
+  expect(screen.getByRole('status').textContent).toBe(
+    'Polly could not synthesize this recording.',
+  );
+});
+
+it('does not show the previous recording as complete while a new submission is in flight', async () => {
+  const props = { onAccepted: vi.fn(), onChecked: vi.fn(), onLocked: vi.fn() };
+  const view = render(<Form {...props} recordings={[]} />);
+  const user = userEvent.setup();
+
+  await user.type(screen.getByLabelText('Text to convert'), 'First recording');
+  await user.click(screen.getByRole('button', { name: 'Submit', exact: true }));
+
+  let finish;
+
+  api.post.mockImplementationOnce(() => ({
+    response: new Promise((resolve) => {
+      finish = resolve;
+    }),
+  }));
+  await user.type(screen.getByLabelText('Text to convert'), 'Second recording');
+  await user.click(screen.getByRole('button', { name: 'Submit', exact: true }));
+  view.rerender(
+    <Form {...props} recordings={[{ ...row, status: 'COMPLETE' }]} />,
+  );
+
+  expect(screen.getByRole('status').textContent).toBe('Submitting...');
+
+  await act(async () =>
+    finish({
+      body: {
+        json: async () => ({
+          ...row,
+          id: '22345678-1234-4123-8123-123456789abc',
+        }),
+      },
+    }),
+  );
+
+  expect(screen.getByRole('status').textContent).toContain('Recording queued.');
 });
 
 it('keeps the current page when the form checks a submission status', async () => {

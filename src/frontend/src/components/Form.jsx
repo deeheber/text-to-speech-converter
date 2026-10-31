@@ -4,7 +4,22 @@ import { isAuthError } from '../api';
 import { getSession } from '../session';
 import '../styles/Form.css';
 
-function Form({ onAccepted, onChecked, onLocked }) {
+function statusMessage(row) {
+  if (row.status === 'UNKNOWN' || row.status === 'STARTING') {
+    return (
+      row.message ||
+      'Start outcome is uncertain. Check status before submitting another attempt.'
+    );
+  }
+
+  if (row.status === 'FAILED') {
+    return row.message || 'Conversion failed. You can submit a new attempt.';
+  }
+
+  return `Recording ${row.status.toLowerCase()}. You can close this page and check later.`;
+}
+
+function Form({ onAccepted, onChecked, onLocked, recordings = [] }) {
   const [formData, setFormData] = useState({ voice: '', text: '' });
   const [voiceList, setVoiceList] = useState([]);
   const [voicesLoading, setVoicesLoading] = useState(true);
@@ -16,6 +31,19 @@ function Form({ onAccepted, onChecked, onLocked }) {
   const mounted = useRef(true);
   const uncertain =
     submission?.status === 'UNKNOWN' || submission?.status === 'STARTING';
+
+  useEffect(() => {
+    if (busy || !['QUEUED', 'PROCESSING'].includes(submission?.status)) {
+      return;
+    }
+
+    const latest = recordings.find((row) => row.id === submission.id);
+
+    if (latest && latest.status !== submission.status) {
+      setSubmission(latest);
+      setMessage(statusMessage(latest));
+    }
+  }, [recordings, submission, busy]);
 
   useEffect(() => {
     mounted.current = true;
@@ -61,23 +89,13 @@ function Form({ onAccepted, onChecked, onLocked }) {
 
   function receive(row) {
     setSubmission(row);
+    setMessage(statusMessage(row));
 
-    if (row.status === 'UNKNOWN' || row.status === 'STARTING') {
-      setMessage(
-        row.message ||
-          'Start outcome is uncertain. Check status before submitting another attempt.',
-      );
-    } else if (row.status === 'FAILED') {
+    if (row.status === 'FAILED') {
       request.current = null;
-      setMessage(
-        row.message || 'Conversion failed. You can submit a new attempt.',
-      );
-    } else {
+    } else if (row.status !== 'UNKNOWN' && row.status !== 'STARTING') {
       request.current = null;
       setFormData({ text: '', voice: '' });
-      setMessage(
-        `Recording ${row.status.toLowerCase()}. You can close this page and check later.`,
-      );
     }
   }
 

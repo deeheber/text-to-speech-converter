@@ -153,7 +153,12 @@ function App({ onLocked }) {
           Lock
         </button>
       </div>
-      <Form onAccepted={accepted} onChecked={checked} onLocked={onLocked} />
+      <Form
+        onAccepted={accepted}
+        onChecked={checked}
+        onLocked={onLocked}
+        recordings={page.rows}
+      />
       {error && (
         <div role="alert">
           {error}{' '}
