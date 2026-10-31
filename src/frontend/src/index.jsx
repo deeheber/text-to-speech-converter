@@ -1,22 +1,15 @@
 import { createRoot } from 'react-dom/client';
 
-import App from './components/App';
+import PasswordGate from './components/PasswordGate';
+import { configureAmplify } from './amplifyConfig';
 import * as serviceWorker from './serviceWorker';
 
-import { Amplify } from 'aws-amplify';
 import config from './config';
-Amplify.configure({
-  API: {
-    REST: {
-      backend: {
-        endpoint: config.backendAPI,
-      },
-    },
-  },
-});
+
+configureAmplify(config);
 
 const container = document.getElementById('root');
 const root = createRoot(container);
-root.render(<App tab="home" />);
+root.render(<PasswordGate />);
 
 serviceWorker.unregister();
