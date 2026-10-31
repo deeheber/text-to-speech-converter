@@ -9,4 +9,3 @@ samconfig.toml
 # We want to dynamically generate this file on deploy
 src/frontend/src/config.js
 src/frontend/build
-.kukulu/implement.lock
