@@ -322,3 +322,71 @@ Derived from docs/SPEC.md v0.1 on 2026-10-31. SPEC.md wins over this file.
 - SPEC 3 principle 3 bans `===`/`!==` on credentials; this is only partly mechanical (the `no-credential-equality` constraint keys on variable names). Tasks name the variables; the reviewer checks the rest by reading.
 - SPEC 6 does not say what `lock(message)` does with the message; PLAN shows it in `PasswordForm`'s alert element.
 - SPEC 5 says Login's policy grants `GetSecretValue` on "both secrets" and the template test checks policies "exactly"; SPEC does not mention the X-Ray policy every existing function has. PLAN adds `AWSXrayWriteOnlyAccess` and the test checks only the secrets grants exactly.
+
+## Review fixes (round 1)
+
+### R1-01: Stop no-build-references matching the pipeline's .kukulu/ path in .gitignore
+
+**Goal:** Make the no-build-references constraint ignore path references to the tool's own .kukulu/ directory so kukulu_verify and kukulu_mutate report real results.
+**Files touched:** docs/kukulu.json
+**Design constraints:** Change only the no-build-references rule. Make the Kukulu alternative skip a path reference, e.g. `(?<!\.)[Kk][uūŪU]kulu`, and keep every existing shouldMatch and shouldNotMatch fixture passing. Do not edit .gitignore: the pipeline owns line 12 (`.kukulu/implement.lock`). Leave the other alternatives (task IDs, SPEC, PLAN.md, §) unchanged.
+**Acceptance tests:** Add `.kukulu/implement.lock` (the line at .gitignore:12) to the rule's shouldNotMatch. The constraint self-test then fails if the pattern still matches it. The existing shouldMatch fixtures `// built by Kūkulu` and `# kukulu flight` must still match.
+**Out of scope:** .gitignore, other constraints, SPEC.md
+**Verification:** kukulu_verify: the constraints result is ok:true with no-build-references hits empty and fixture null; all verify commands green.
+**Depends on:** none
+
+### R1-02: Test verifyToken's part-count, digit-only and safe-integer rejections
+
+**Goal:** Cover the SPEC 5 Token rules 'not exactly 3 parts' and 'expiresAt isn't an integer' with cases that pass every other check, so that only the guard under test rejects them.
+**Files touched:** src/Auth/test/token.test.mjs
+**Design constraints:** Test-only change unless a new test exposes a real bug in src/Auth/token.mjs. Sign non-canonical payloads in the test with createHmac('sha256', KEY).update(payload).digest('base64url') so the HMAC check passes and only the structural guard can reject. Use node:test and node:assert/strict. Principle 11: no task IDs or SPEC in test names.
+**Acceptance tests:** New test 'verifyToken rejects correctly signed but non-canonical tokens'. Cases:
+- `${validToken}.extra` (kills deleting token.mjs:17 `parts.length !== 3`)
+- `v1.1e10`, `v1. <exp>` (leading space) and `v1.+<exp>`, each with a valid signature for that exact payload (kills deleting token.mjs:20, the digit regex)
+- `v1.99999999999999999999` with a valid signature (kills deleting token.mjs:22, `Number.isSafeInteger`)
+Each case asserts false.
+**Out of scope:** secrets.mjs, login.mjs, authorizer.mjs
+**Verification:** npm test --prefix src/Auth. kukulu_mutate deleting each of token.mjs lines 17, 20 and 22 makes `node --test src/Auth/test/token.test.mjs` exit non-zero.
+**Depends on:** none
+
+### R1-03: Test session.js expiry boundary and numeric expiresAt check
+
+**Goal:** Cover getSession's `expiresAt <= now` boundary and its rejection of a non-number expiresAt.
+**Files touched:** src/frontend/test/session.test.js
+**Design constraints:** Test-only change unless a test exposes a bug in src/frontend/src/session.js. Import describe/it/expect/vi from vitest. Use vi.useFakeTimers()/vi.setSystemTime() for the boundary so the test is not flaky, and restore real timers afterward. Keep localStorage use inside the test file (test/ is outside the constraint scope).
+**Acceptance tests:** - New test 'treats a session expiring exactly now as expired': fix the clock, save expiresAt = Math.floor(now/1000), expect getSession() to be null and the tts.session entry to be removed. Kills `>` changed to `>=` at session.js:12.
+- Add `JSON.stringify({ token: 'abc', expiresAt: '9999999999' })` to 'treats a malformed entry as null and removes it'. Kills deleting `typeof parsed.expiresAt === 'number'` at session.js:11.
+**Out of scope:** Components, api.js, amplifyConfig.js
+**Verification:** npm test --prefix src/frontend; npm run lint --prefix src/frontend. Both mutants make `npx --prefix src/frontend vitest run --root src/frontend test/session.test.js` exit non-zero.
+**Depends on:** none
+
+### R1-04: Test App's no-session branch on GET /file and the skipped error path
+
+**Goal:** Cover SPEC 8's App test 'a failure while getSession() is null calls onLocked' on App's own GET /file catch, and check that the existing error path is skipped.
+**Files touched:** src/frontend/test/App.test.jsx
+**Design constraints:** Test-only change unless a test exposes a bug in src/frontend/src/components/App.jsx. Import from vitest. Mock aws-amplify/api per path as the file already does. Principle 11 applies.
+**Acceptance tests:** New test 'calls onLocked when GET /file fails and there is no session': clearSession(), make /file reject with a network Error, let /voices succeed, and expect onLocked(EXPIRED) and console.error not called. This kills replacing `isAuthError(err) || getSession() === null` with `isAuthError(err)` at App.jsx:50, and deleting `return;` at App.jsx:52.
+**Out of scope:** Form.jsx, Table.jsx, PasswordGate
+**Verification:** npm test --prefix src/frontend; npm run lint --prefix src/frontend. Both mutants make `npx --prefix src/frontend vitest run --root src/frontend test/App.test.jsx` exit non-zero.
+**Depends on:** none
+
+### R1-05: Test Form's 401/403 on GET /voices and its no-session branch on POST /file
+
+**Goal:** Cover SPEC 6's rule that Form calls onLocked when isAuthError(err) or getSession() is null, on both of Form's API calls, skipping the existing error UI.
+**Files touched:** src/frontend/test/App.test.jsx
+**Design constraints:** Test-only change unless a test exposes a bug in src/frontend/src/components/Form.jsx. Import from vitest. Principle 11 applies.
+**Acceptance tests:** - New test 'calls onLocked when GET /voices returns 403': valid session, /voices rejects with a 403; expect onLocked(EXPIRED) and console.error not called. Kills dropping isAuthError at Form.jsx:33 and deleting `return;` at Form.jsx:35.
+- New test 'calls onLocked when POST /file fails and there is no session': render with a session, then clearSession() before submitting; POST rejects with a network Error. Expect onLocked(EXPIRED) and no 'An error occurred' text. Kills replacing the condition at Form.jsx:79 with `isAuthError(err)`.
+**Out of scope:** App.jsx, Table.jsx
+**Verification:** npm test --prefix src/frontend; npm run lint --prefix src/frontend. All three mutants make `npx --prefix src/frontend vitest run --root src/frontend test/App.test.jsx` exit non-zero.
+**Depends on:** R1-04
+
+### R1-06: Test Table's no-session branch on DELETE
+
+**Goal:** Cover SPEC 6's rule that Table calls onLocked when a DELETE fails while getSession() is null.
+**Files touched:** src/frontend/test/App.test.jsx
+**Design constraints:** Test-only change unless a test exposes a bug in src/frontend/src/components/Table.jsx. Import from vitest. Principle 11 applies.
+**Acceptance tests:** New test 'calls onLocked when DELETE fails and there is no session': render with a session, wait for the row, clearSession(), make del reject with a network Error, then click X. Expect onLocked(EXPIRED) and window.alert not called. Kills replacing `isAuthError(err) || getSession() === null` with `isAuthError(err)` at Table.jsx:18.
+**Out of scope:** App.jsx, Form.jsx
+**Verification:** npm test --prefix src/frontend; npm run lint --prefix src/frontend. The mutant makes `npx --prefix src/frontend vitest run --root src/frontend test/App.test.jsx` exit non-zero.
+**Depends on:** R1-05

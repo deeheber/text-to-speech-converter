@@ -20,6 +20,12 @@ Started: 2026-10-31T17:18:59.941Z
 - [x] P1-05 Add the password gate and render it from index.jsx
 - [x] P1-06 Note the password prompt in the README's local-dev section
 - [x] P1-07 Phase 1 checkpoint: push and list manual frontend checks
+- [ ] R1-01 Stop no-build-references matching the pipeline's .kukulu/ path in .gitignore
+- [ ] R1-02 Test verifyToken's part-count, digit-only and safe-integer rejections
+- [ ] R1-03 Test session.js expiry boundary and numeric expiresAt check
+- [ ] R1-04 Test App's no-session branch on GET /file and the skipped error path
+- [ ] R1-05 Test Form's 401/403 on GET /voices and its no-session branch on POST /file
+- [ ] R1-06 Test Table's no-session branch on DELETE
 
 ## Log
 
