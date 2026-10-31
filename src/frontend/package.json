@@ -12,16 +12,21 @@
     "build": "vite build",
     "production": "./productionBuild.sh",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "vitest run"
   },
   "type": "module",
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@testing-library/react": "^16.3.3",
+    "@testing-library/user-event": "^14.6.8",
     "@vitejs/plugin-react": "^6.1.2",
     "eslint": "^10.14.0",
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.7",
     "globals": "^17.13.0",
-    "vite": "^8.3.5"
+    "jsdom": "^30.1.3",
+    "vite": "^8.3.5",
+    "vitest": "^5.0.5"
   }
 }
