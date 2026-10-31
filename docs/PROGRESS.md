@@ -17,7 +17,7 @@ Started: 2026-10-31T17:18:59.941Z
 - [x] P1-02 Add the login API client and the Amplify configuration
 - [x] P1-03 Add the password form
 - [x] P1-04 Add the Lock button and auth-error handling to App, Form and Table
-- [ ] P1-05 Add the password gate and render it from index.jsx
+- [x] P1-05 Add the password gate and render it from index.jsx
 - [ ] P1-06 Note the password prompt in the README's local-dev section
 - [ ] P1-07 Phase 1 checkpoint: push and list manual frontend checks
 
@@ -83,3 +83,7 @@ Tests: 7 in PasswordForm.test.jsx. Interpretation: input cleared at submit start
 ### P1-04 — d1e6cd9
 
 Tests: 7 in App.test.jsx. Interpretation: onLocked is in the useEffect deps of App and Form, so PasswordGate MUST pass a stable (useCallback) lock function or the initial fetches rerun. Auth-error branch returns before existing error UI; other errors unchanged. Lock button calls onLocked() with no args.
+
+### P1-05 — c6c75e2
+
+Tests: 7 in PasswordGate.test.jsx. lock/handleUnlocked are useCallback-stable. index.jsx now calls configureAmplify(config) and renders PasswordGate (not tested; imports gitignored config). `vite build` to a scratch outDir compiled OK (did not run npm run production).
