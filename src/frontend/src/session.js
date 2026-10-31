@@ -1,14 +1,15 @@
 const STORAGE_KEY = 'tts.session';
 
-/* Browsers that block site storage throw on every localStorage call. The
-   in-memory copy keeps the app usable until the page reloads. */
+/* localStorage can throw (storage blocked) or reject writes (storage full), so
+   the in-memory copy is authoritative until the page reloads. */
 let memorySession = null;
 
 function readRaw() {
+  if (memorySession) return JSON.stringify(memorySession);
   try {
     return localStorage.getItem(STORAGE_KEY);
   } catch {
-    return memorySession && JSON.stringify(memorySession);
+    return null;
   }
 }
 

@@ -76,6 +76,16 @@ describe('session', () => {
     expect(() => clearSession()).not.toThrow();
   });
 
+  it('keeps the new session when storage is full', () => {
+    localStorage.setItem('tts.session', JSON.stringify({ token: 'old', expiresAt: future() }));
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new DOMException('Quota exceeded', 'QuotaExceededError');
+    });
+    const expiresAt = future();
+    saveSession({ token: 'new', expiresAt });
+    expect(getSession()).toEqual({ token: 'new', expiresAt });
+  });
+
   it('keeps the session in memory when storage is blocked', () => {
     blockStorage();
     const expiresAt = future();

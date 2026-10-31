@@ -4,11 +4,12 @@ const configure = vi.hoisted(() => vi.fn());
 vi.mock('aws-amplify', () => ({ Amplify: { configure } }));
 
 import { configureAmplify } from '../src/amplifyConfig.js';
-import { saveSession } from '../src/session.js';
+import { clearSession, saveSession } from '../src/session.js';
 
 describe('configureAmplify', () => {
   beforeEach(() => {
     configure.mockReset();
+    clearSession();
     localStorage.clear();
   });
 

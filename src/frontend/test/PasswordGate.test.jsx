@@ -6,7 +6,7 @@ const api = vi.hoisted(() => ({ get: vi.fn(), post: vi.fn(), del: vi.fn() }));
 vi.mock('aws-amplify/api', () => api);
 
 import PasswordGate from '../src/components/PasswordGate.jsx';
-import { saveSession } from '../src/session.js';
+import { clearSession, saveSession } from '../src/session.js';
 
 const future = () => Math.floor(Date.now() / 1000) + 600;
 const ok = (body) => ({
@@ -27,6 +27,7 @@ const unlock = async (password = 'hunter2') => {
 
 beforeEach(() => {
   vi.spyOn(console, 'error').mockImplementation(() => {});
+  clearSession();
   localStorage.clear();
   routes = {
     '/file': () => ok({ Items: [row] }),
