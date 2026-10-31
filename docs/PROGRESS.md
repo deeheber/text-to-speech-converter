@@ -12,7 +12,7 @@ Started: 2026-10-31T17:18:59.941Z
 - [x] P0-05 Add the login handler
 - [x] P0-06 Wire secrets, functions, authorizer and throttling into the template, with a template test
 - [x] P0-07 Document the password, rotation and deploy order in the README
-- [ ] P0-08 Phase 0 checkpoint: push and list manual API checks
+- [x] P0-08 Phase 0 checkpoint: push and list manual API checks
 - [ ] P1-01 Add Vitest and the session store
 - [ ] P1-02 Add the login API client and the Amplify configuration
 - [ ] P1-03 Add the password form
@@ -52,3 +52,18 @@ Tests: 11 in test/template/template.test.mjs (yaml customTags for Ref/GetAtt/Sub
 ### P0-07 — f1d122f
 
 README: Site password section, POST /login endpoint, new test commands. Names match template (ApiPasswordSecretArn, TokenSigningKeySecretArn, TokenTtlHours). No tests (docs).
+
+### P0-08 — d1c9da3
+
+Push: done (git push -u origin HEAD). Full verify set green except tooling-added .gitignore line flagged by no-build-references.
+Manual check: NOT VERIFIED (human)
+- GET /voices without a token -> 401
+- GET /voices with Authorization: v1.1.abc -> 403 (note whether access-control-allow-origin is present when sent with Origin: http://localhost:3000)
+- POST /login wrong password -> 401; right password -> 200 with a token
+- GET /voices with that token -> 200
+- OPTIONS preflight -> 204 with CORS headers
+- rapid repeated POST /login -> 429
+- deploy passes with FailOnWarnings
+- after rotating the signing key the old token is rejected within about 10 minutes
+- CloudWatch logs for all six Lambdas (CreateNewFile, ListFiles, DeleteFile, GetVoices, Login, TokenAuthorizer) contain no password or token
+- Deploying Phase 0 without Phase 1 breaks the deployed frontend.
