@@ -1,5 +1,7 @@
 import { useReducer, useState, useEffect } from 'react';
 import { get } from 'aws-amplify/api';
+import { isAuthError } from '../api';
+import { getSession } from '../session';
 import Form from './Form';
 import Table from './Table';
 
@@ -24,7 +26,7 @@ function rowsReducer(state, action) {
   }
 }
 
-function App() {
+function App({ onLocked }) {
   const [rows, setRows] = useReducer(rowsReducer, []);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -45,19 +47,37 @@ function App() {
           setIsLoading(false);
         })
         .catch((err) => {
+          if (isAuthError(err) || getSession() === null) {
+            onLocked('Your session expired. Enter the password again.');
+            return;
+          }
           console.error(err);
           setIsLoading(false);
         });
     }
 
     return () => (isSubscribed = false);
-  }, []);
+  }, [onLocked]);
 
   return (
     <div className="container">
-      <h1>Text to speech converter</h1>
-      <Form setIsLoading={setIsLoading} setRows={setRows} />
-      <Table rows={rows} isLoading={isLoading} setRows={setRows} />
+      <div className="header">
+        <h1>Text to speech converter</h1>
+        <button type="button" onClick={() => onLocked()}>
+          Lock
+        </button>
+      </div>
+      <Form
+        setIsLoading={setIsLoading}
+        setRows={setRows}
+        onLocked={onLocked}
+      />
+      <Table
+        rows={rows}
+        isLoading={isLoading}
+        setRows={setRows}
+        onLocked={onLocked}
+      />
     </div>
   );
 }

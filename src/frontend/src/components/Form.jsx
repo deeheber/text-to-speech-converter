@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
 import { get, post } from 'aws-amplify/api';
+import { isAuthError } from '../api';
+import { getSession } from '../session';
 import '../styles/Form.css';
 
-function Form({ setIsLoading, setRows }) {
+function Form({ setIsLoading, setRows, onLocked }) {
   const [formData, setFormData] = useState({
     voice: '',
     text: '',
@@ -28,13 +30,17 @@ function Form({ setIsLoading, setRows }) {
           setIsLoading(false);
         })
         .catch((err) => {
+          if (isAuthError(err) || getSession() === null) {
+            onLocked('Your session expired. Enter the password again.');
+            return;
+          }
           console.error(err);
           setIsLoading(false);
         });
     }
 
     return () => (isSubscribed = false);
-  }, [setIsLoading]);
+  }, [setIsLoading, onLocked]);
 
   function handleChange(event) {
     setFormData({
@@ -70,6 +76,10 @@ function Form({ setIsLoading, setRows }) {
       // Clear the form
       setFormData({ voice: '', text: '', message: '' });
     } catch (err) {
+      if (isAuthError(err) || getSession() === null) {
+        onLocked('Your session expired. Enter the password again.');
+        return;
+      }
       setFormData({
         ...formData,
         message: `An error occurred: ${err.message}`,

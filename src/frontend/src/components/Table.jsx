@@ -1,7 +1,9 @@
 import { del } from 'aws-amplify/api';
+import { isAuthError } from '../api';
+import { getSession } from '../session';
 import '../styles/Table.css';
 
-function Table({ isLoading, setRows, rows }) {
+function Table({ isLoading, setRows, rows, onLocked }) {
   async function handleDelete(id) {
     const deleteConfirm = window.confirm('Do you really want to delete?');
     if (!deleteConfirm) {
@@ -13,6 +15,10 @@ function Table({ isLoading, setRows, rows }) {
       await deleteResponse.response;
       setRows({ type: 'remove', payload: { id } });
     } catch (err) {
+      if (isAuthError(err) || getSession() === null) {
+        onLocked('Your session expired. Enter the password again.');
+        return;
+      }
       alert(`An error occurred: ${err.message}`);
       console.error(err);
     }
