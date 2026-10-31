@@ -112,6 +112,8 @@ Keep the inline `DefinitionBody`, `FailOnWarnings: true` and `CorsConfiguration`
     RouteSettings:
       'POST /login': { ThrottlingRateLimit: 1, ThrottlingBurstLimit: 3 }
 
+API Gateway applies HTTP API throttling on a best-effort basis: the limits are targets, not guaranteed ceilings, and small limits like these may never return 429. Brute-force resistance comes from the random 32-character password, not from the throttle.
+
 Plus `AWS::Lambda::Permission` for `apigateway.amazonaws.com` to invoke `TokenAuthorizer`, with `SourceArn: !Sub arn:${AWS::Partition}:execute-api:${AWS::Region}:${AWS::AccountId}:${HttpApi}/authorizers/*`. SAM does not create this permission.
 
 ## 6. Interfaces
@@ -234,7 +236,7 @@ Manual check (human, after deploying):
 | `POST /login`, right password | 200 with a token |
 | `GET /voices` with that token | 200 |
 | OPTIONS preflight | 204 with CORS headers |
-| Rapid repeated `POST /login` | 429 |
+| Rapid repeated `POST /login` | Best effort: 429 may appear, but 401s alone are not a failure (throttling isn't guaranteed) |
 
 Also check:
 - The deploy passes with `FailOnWarnings`.
