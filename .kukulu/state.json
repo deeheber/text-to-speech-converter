@@ -1,0 +1,25 @@
+{
+  "round": 0,
+  "implemented": false,
+  "reviewed": false,
+  "verdict": null,
+  "summarized": false,
+  "halted": null,
+  "preexistingUntracked": [],
+  "policies": {
+    "signing": "auto",
+    "push": true,
+    "pr": "draft",
+    "feedback": true
+  },
+  "signing": null,
+  "rounds": [],
+  "timeline": [
+    {
+      "event": "start",
+      "stage": "plan",
+      "round": 0,
+      "at": "2026-10-31T17:02:57.854Z"
+    }
+  ]
+}
