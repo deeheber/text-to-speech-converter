@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { clearSession, getSession, saveSession } from '../src/session.js';
 
 const future = () => Math.floor(Date.now() / 1000) + 3600;
@@ -6,6 +6,10 @@ const future = () => Math.floor(Date.now() / 1000) + 3600;
 describe('session', () => {
   beforeEach(() => {
     localStorage.clear();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it('saves, reads and clears a session', () => {
@@ -24,6 +28,15 @@ describe('session', () => {
     expect(localStorage.getItem('tts.session')).toBeNull();
   });
 
+  it('treats a session expiring exactly now as expired', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2030-01-01T00:00:00Z'));
+    const expiresAt = Math.floor(Date.now() / 1000);
+    saveSession({ token: 'abc', expiresAt });
+    expect(getSession()).toBeNull();
+    expect(localStorage.getItem('tts.session')).toBeNull();
+  });
+
   it('treats a malformed entry as null and removes it', () => {
     for (const raw of [
       '{',
@@ -31,6 +44,7 @@ describe('session', () => {
       '"text"',
       JSON.stringify({ token: 5, expiresAt: future() }),
       JSON.stringify({ token: 'abc', expiresAt: 'soon' }),
+      JSON.stringify({ token: 'abc', expiresAt: '9999999999' }),
       JSON.stringify({ token: 'abc' }),
     ]) {
       localStorage.setItem('tts.session', raw);
