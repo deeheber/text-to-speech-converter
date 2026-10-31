@@ -25,7 +25,7 @@ Started: 2026-10-31T17:18:59.941Z
 - [x] R1-03 Test session.js expiry boundary and numeric expiresAt check
 - [x] R1-04 Test App's no-session branch on GET /file and the skipped error path
 - [x] R1-05 Test Form's 401/403 on GET /voices and its no-session branch on POST /file
-- [ ] R1-06 Test Table's no-session branch on DELETE
+- [x] R1-06 Test Table's no-session branch on DELETE
 
 ## Log
 
@@ -132,3 +132,7 @@ Added no-session GET /file test (asserts onLocked and no console.error); both mu
 ### R1-05 — cbeb792
 
 Added two Form tests; all three mutants (drop isAuthError at :33, drop return at :35, drop getSession check at :79) confirmed failing App.test.jsx.
+
+### R1-06 — c736012
+
+Added Table no-session DELETE test; mutant at Table.jsx:18 confirmed failing App.test.jsx.
