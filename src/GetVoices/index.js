@@ -1,8 +1,11 @@
 import { PollyClient, DescribeVoicesCommand } from '@aws-sdk/client-polly';
 
 export const handler = async (message) => {
-  // Log the event argument for debugging and for use in local development.
-  console.log('GetVoices invoked', { requestId: message.requestContext?.requestId, routeKey: message.routeKey });
+  console.log('GetVoices invoked', {
+    requestId: message.requestContext?.requestId,
+    routeKey: message.routeKey,
+  });
+
   let response;
   let statusCode;
 
@@ -12,6 +15,7 @@ export const handler = async (message) => {
       Engine: 'standard',
       LanguageCode: 'en-US',
     });
+
     response = await client.send(command);
     console.log(response.Voices.length);
   } catch (err) {
@@ -24,5 +28,6 @@ export const handler = async (message) => {
       body: JSON.stringify(err.message),
     };
   }
+
   return response;
 };

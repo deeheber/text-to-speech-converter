@@ -12,3 +12,7 @@
 
 # package-lock
 */package-lock.json
+
+# Generated frontend files
+src/frontend/build/**
+src/frontend/src/config.js

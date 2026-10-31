@@ -11,12 +11,18 @@ let now = Date.now;
 
 export const getSecret = async (arn) => {
   const hit = cache.get(arn);
-  if (hit && now() - hit.fetchedAt < CACHE_TTL_MS) return hit.value;
+
+  if (hit && now() - hit.fetchedAt < CACHE_TTL_MS) {
+    return hit.value;
+  }
+
   const fetchedAt = now();
   const { SecretString } = await client.send(
     new GetSecretValueCommand({ SecretId: arn }),
   );
+
   cache.set(arn, { value: SecretString, fetchedAt });
+
   return SecretString;
 };
 

@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const post = vi.hoisted(() => vi.fn());
+
 vi.mock('aws-amplify/api', () => ({ post }));
 
 import { isAuthError, login } from '../src/api.js';
@@ -15,9 +16,11 @@ describe('api', () => {
 
   it('login posts the password to /login and returns the token', async () => {
     const body = { token: 'abc', expiresAt: 123 };
+
     post.mockReturnValue({
       response: Promise.resolve({ body: { json: async () => body } }),
     });
+
     await expect(login('hunter2')).resolves.toEqual(body);
     expect(post).toHaveBeenCalledWith({
       apiName: 'backend',
