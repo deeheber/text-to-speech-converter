@@ -16,7 +16,30 @@ import { chunkText } from './chunkText.mjs';
 export const handler = async (message) => {
   console.log('CreateNewFile invoked  with  message: ', message);
 
+  let data;
+  try {
+    data = JSON.parse(message.body);
+  } catch {
+    return {
+      statusCode: 400,
+      body: JSON.stringify('Request body must be valid JSON'),
+    };
+  }
+
+  if (typeof data?.text !== 'string' || data.text.trim() === '') {
+    return {
+      statusCode: 400,
+      body: JSON.stringify('Text must be a non-empty string'),
+    };
+  }
+  if (data.voice !== undefined && typeof data.voice !== 'string') {
+    return { statusCode: 400, body: JSON.stringify('Voice must be a string') };
+  }
+
+  const text = data.text;
+  const voice = data.voice || 'Matthew';
   let response;
+  let metadataCreated = false;
   const id = randomUUID();
   const createdAt = Date.now();
 
@@ -24,10 +47,6 @@ export const handler = async (message) => {
   const ddbDocClient = DynamoDBDocumentClient.from(dyanmodbClient);
 
   try {
-    const data = JSON.parse(message.body);
-    const text = data.text;
-    const voice = data.voice || 'Matthew';
-
     const params = {
       TableName: process.env.TABLE_NAME,
       Item: {
@@ -42,14 +61,11 @@ export const handler = async (message) => {
 
     console.log(`Adding file metadata to table ${process.env.TABLE_NAME}`);
     await ddbDocClient.send(new PutCommand(params));
+    metadataCreated = true;
     console.log('Item successfully added to the table  ', params);
 
     console.log('START convert to audio.');
 
-    // Process text in chunks of 2500 characters
-    // This is due to the polly limits for synthesizeSpeech
-    // As of 04/13/2019 that limit is 3000 characters
-    // https://docs.aws.amazon.com/polly/latest/dg/limits.html
     const textChunks = chunkText(text);
     const pollyClient = new PollyClient({ region: process.env.AWS_REGION });
 
@@ -60,7 +76,7 @@ export const handler = async (message) => {
           Text: `${textChunks[i]}`,
           TextType: 'text',
           VoiceId: `${voice}`,
-        })
+        }),
       );
 
       console.log('SUCCESS converting text chunk to audio: ', pollyFile);
@@ -98,31 +114,35 @@ export const handler = async (message) => {
           '#s3_url': 'url',
         },
         ReturnValues: 'ALL_NEW',
-      })
+      }),
     );
     console.log('SUCCESS adding url to  DynamoDB: ', updateDynamo);
 
     response = JSON.stringify(updateDynamo.Attributes);
   } catch (err) {
     console.log('ERROR: ', err);
-    console.log('Setting DynamoDB status to FAILED');
-
-    const failDynamo = await ddbDocClient.send(
-      new UpdateComment({
-        TableName: process.env.TABLE_NAME,
-        Key: { id },
-        UpdateExpression: 'SET #file_status = :status',
-        ExpressionAttributeValues: {
-          ':status': 'FAILED',
-        },
-        ExpressionAttributeNames: {
-          '#file_status': 'status',
-        },
-        ReturnValues: 'ALL_NEW',
-      })
-    );
-
-    console.log('Set DynamoDB to FAILED: ', failDynamo);
+    if (metadataCreated) {
+      try {
+        console.log('Setting DynamoDB status to FAILED');
+        const failDynamo = await ddbDocClient.send(
+          new UpdateCommand({
+            TableName: process.env.TABLE_NAME,
+            Key: { id },
+            UpdateExpression: 'SET #file_status = :status',
+            ExpressionAttributeValues: {
+              ':status': 'FAILED',
+            },
+            ExpressionAttributeNames: {
+              '#file_status': 'status',
+            },
+            ReturnValues: 'ALL_NEW',
+          }),
+        );
+        console.log('Set DynamoDB to FAILED: ', failDynamo);
+      } catch (statusError) {
+        console.log('Failed to set DynamoDB status to FAILED: ', statusError);
+      }
+    }
 
     response = {
       statusCode: err.statusCode || 500,

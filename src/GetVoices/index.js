@@ -13,9 +13,10 @@ export const handler = async (message) => {
       LanguageCode: 'en-US',
     });
     response = await client.send(command);
+    console.log(response.Voices.length);
   } catch (err) {
     console.log(
-      `AN ERROR OCURRED: ${JSON.stringify(err.message, undefined, 2)}`
+      `AN ERROR OCURRED: ${JSON.stringify(err.message, undefined, 2)}`,
     );
     statusCode = err.statusCode || 500;
     response = {
@@ -23,6 +24,5 @@ export const handler = async (message) => {
       body: JSON.stringify(err.message),
     };
   }
-  console.log(response.Voices.length);
   return response;
 };
