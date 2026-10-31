@@ -3,7 +3,7 @@
 ## Summary
 This is an application that takes in text and outputs an audio file of that text. Written with US-English in mind, so it might not convert as expected for other languages.
 
-My deployed version [here](http://text-to-speech-frontend.s3-website-us-west-2.amazonaws.com/). Feel free to add your own things to convert to audio, download files, and delete files.
+My deployed version [here](https://d21fkyflmuqkf4.cloudfront.net/). Feel free to add your own things to convert to audio, download files, and delete files.
 
 ### Technologies Used
 - [Node](https://nodejs.org/)
