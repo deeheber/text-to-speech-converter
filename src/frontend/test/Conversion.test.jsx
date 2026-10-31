@@ -1,0 +1,815 @@
+import {
+  act,
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+} from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { afterEach, beforeEach, expect, it, vi } from 'vitest';
+
+const api = vi.hoisted(() => ({ get: vi.fn(), post: vi.fn(), del: vi.fn() }));
+
+vi.mock('aws-amplify/api', () => api);
+import Form from '../src/components/Form.jsx';
+import App from '../src/components/App.jsx';
+import { clearSession, saveSession } from '../src/session.js';
+
+const id = '12345678-1234-4123-8123-123456789abc';
+const row = {
+  id,
+  text: 'new recording',
+  status: 'QUEUED',
+  voice: 'Matthew',
+  createdAt: 1000,
+};
+const ok = (body) => ({
+  response: Promise.resolve({ body: { json: async () => body } }),
+});
+const failed = (status, body) => ({
+  response: Promise.reject(
+    Object.assign(new Error('Request failed'), {
+      response: { statusCode: status, body: JSON.stringify(body) },
+    }),
+  ),
+});
+let file;
+
+beforeEach(() => {
+  localStorage.clear();
+  saveSession({
+    token: 'token',
+    expiresAt: Math.floor(Date.now() / 1000) + 600,
+  });
+  vi.spyOn(console, 'error').mockImplementation(() => {});
+  vi.spyOn(window, 'confirm').mockReturnValue(true);
+  vi.spyOn(window, 'alert').mockImplementation(() => {});
+  vi.spyOn(document, 'hidden', 'get').mockReturnValue(false);
+  file = vi.fn(() => ok({ Items: [], nextCursor: null }));
+  api.get.mockImplementation(({ path, options }) =>
+    path === '/voices'
+      ? ok({ Voices: [] })
+      : path === '/file'
+        ? file(options)
+        : ok(row),
+  );
+  api.post.mockImplementation(() => ok(row));
+  api.del.mockImplementation(() => ok({}));
+});
+afterEach(() => {
+  cleanup();
+  vi.useRealTimers();
+  vi.restoreAllMocks();
+  Object.values(api).forEach((fn) => fn.mockReset());
+});
+
+it('keeps one UUID and exact text through an uncertain response and blocks double submission', async () => {
+  let resolve;
+
+  api.post.mockImplementationOnce(() => ({
+    response: new Promise((done) => {
+      resolve = done;
+    }),
+  }));
+  render(<Form onAccepted={vi.fn()} onLocked={vi.fn()} />);
+
+  const user = userEvent.setup();
+
+  await user.type(screen.getByLabelText('Text to convert'), 'Keep this text');
+  fireEvent.submit(document.querySelector('form'));
+  fireEvent.submit(document.querySelector('form'));
+
+  expect(api.post).toHaveBeenCalledTimes(1);
+
+  const first = api.post.mock.calls[0][0].options.body;
+
+  expect(first.text).toBe('Keep this text');
+
+  await act(async () =>
+    resolve({
+      body: { json: async () => ({ id: first.requestId, status: 'UNKNOWN' }) },
+    }),
+  );
+
+  expect(screen.getByLabelText('Text to convert').value).toBe('Keep this text');
+  expect(screen.getByLabelText('Text to convert').disabled).toBe(true);
+
+  await user.click(
+    screen.getByRole('button', { name: 'Retry same submission' }),
+  );
+
+  expect(api.post.mock.calls[1][0].options.body).toEqual(first);
+});
+
+it('requires confirmation before a new attempt and generates a fresh UUID', async () => {
+  api.post.mockImplementation(({ options }) =>
+    ok({ id: options.body.requestId, status: 'UNKNOWN' }),
+  );
+  render(<Form onAccepted={vi.fn()} onLocked={vi.fn()} />);
+
+  const user = userEvent.setup();
+
+  await user.type(screen.getByLabelText('Text to convert'), 'hello');
+  await user.click(screen.getByRole('button', { name: 'Submit', exact: true }));
+
+  const first = api.post.mock.calls[0][0].options.body;
+
+  window.confirm.mockReturnValueOnce(false);
+  await user.click(screen.getByRole('button', { name: 'Submit new attempt' }));
+
+  expect(api.post).toHaveBeenCalledTimes(1);
+
+  await user.click(screen.getByRole('button', { name: 'Submit new attempt' }));
+
+  expect(window.confirm).toHaveBeenCalledWith(
+    expect.stringContaining('duplicate audio'),
+  );
+  expect(api.post.mock.calls[1][0].options.body.requestId).not.toBe(
+    first.requestId,
+  );
+  expect(api.post.mock.calls[1][0].options.body.text).toBe('hello');
+});
+
+it('recovers a network failure and preserves later drafts during status checks', async () => {
+  api.post.mockImplementation(() => ({
+    response: Promise.reject(new Error('Network error')),
+  }));
+
+  const checked = vi.fn();
+
+  render(<Form onAccepted={vi.fn()} onChecked={checked} onLocked={vi.fn()} />);
+
+  const user = userEvent.setup();
+
+  await user.type(screen.getByLabelText('Text to convert'), 'hello');
+  await user.click(screen.getByRole('button', { name: 'Submit', exact: true }));
+
+  const requestId = api.post.mock.calls[0][0].options.body.requestId;
+
+  await user.click(screen.getByRole('button', { name: 'Check status' }));
+
+  expect(api.get).toHaveBeenCalledWith(
+    expect.objectContaining({ path: `/file/${requestId}` }),
+  );
+  expect(api.post).toHaveBeenCalledTimes(1);
+  expect(checked).toHaveBeenCalledWith(row);
+  expect(screen.getByLabelText('Text to convert').value).toBe('');
+
+  await user.type(screen.getByLabelText('Text to convert'), 'My next draft');
+
+  for (const status of ['PROCESSING', 'COMPLETE']) {
+    api.get.mockImplementationOnce(() => ok({ ...row, status }));
+    await user.click(screen.getByRole('button', { name: 'Check status' }));
+
+    expect(screen.getByLabelText('Text to convert').value).toBe(
+      'My next draft',
+    );
+    expect(screen.getByRole('status').textContent).toContain(
+      `Recording ${status.toLowerCase()}.`,
+    );
+  }
+});
+
+it.each([
+  ['STARTING', 'QUEUED', '', 'Recording queued.'],
+  ['UNKNOWN', 'COMPLETE', '', 'Recording complete.'],
+  ['UNKNOWN', 'FAILED', 'Original text', 'Conversion failed.'],
+])(
+  'syncs %s to listed %s and releases the retry UUID',
+  async (initial, status, remainingText, confirmation) => {
+    api.post.mockImplementation(({ options }) =>
+      ok({ ...row, id: options.body.requestId, status: initial }),
+    );
+    const props = {
+      onAccepted: vi.fn(),
+      onChecked: vi.fn(),
+      onLocked: vi.fn(),
+    };
+    const view = render(<Form {...props} recordings={[]} />);
+    const user = userEvent.setup();
+
+    await user.type(screen.getByLabelText('Text to convert'), 'Original text');
+    await user.click(
+      screen.getByRole('button', { name: 'Submit', exact: true }),
+    );
+
+    const original = api.post.mock.calls[0][0].options.body;
+
+    expect(screen.getByLabelText('Text to convert').disabled).toBe(true);
+
+    view.rerender(
+      <Form
+        {...props}
+        recordings={[{ ...row, id: original.requestId, status }]}
+      />,
+    );
+
+    const text = screen.getByLabelText('Text to convert');
+
+    expect(text.disabled).toBe(false);
+    expect(text.value).toBe(remainingText);
+    expect(screen.getByRole('status').textContent).toContain(confirmation);
+
+    await user.clear(text);
+    await user.type(text, 'My next draft');
+    await user.click(
+      screen.getByRole('button', { name: 'Submit', exact: true }),
+    );
+
+    const next = api.post.mock.calls[1][0].options.body;
+
+    expect(next.requestId).not.toBe(original.requestId);
+    expect(next.text).toBe('My next draft');
+  },
+);
+
+it('keeps rejected text editable, and enforces the same UTF-16 length at submission', async () => {
+  api.post.mockImplementation(() =>
+    failed(400, { ...row, status: 'FAILED', message: 'Voice rejected' }),
+  );
+  render(<Form onAccepted={vi.fn()} onLocked={vi.fn()} />);
+
+  const user = userEvent.setup();
+
+  await user.type(screen.getByLabelText('Text to convert'), 'hello');
+  await user.click(screen.getByRole('button', { name: 'Submit', exact: true }));
+
+  expect(screen.getByRole('status').textContent).toBe('Voice rejected');
+
+  const text = screen.getByLabelText('Text to convert');
+
+  expect(text.value).toBe('hello');
+  expect(text.disabled).toBe(false);
+  expect(text.maxLength).toBe(100000);
+
+  fireEvent.change(text, { target: { value: '😀'.repeat(50000) + 'x' } });
+  fireEvent.submit(document.querySelector('form'));
+
+  expect(api.post).toHaveBeenCalledTimes(1);
+  expect(screen.getByRole('status').textContent).toContain('100,000');
+});
+
+it('navigates with server cursors, preserves rows on failure, and supports Previous', async () => {
+  file.mockImplementation(({ queryParams }) =>
+    !queryParams.cursor
+      ? ok({
+          Items: [{ ...row, status: 'COMPLETE', text: 'first' }],
+          nextCursor: 'page2',
+        })
+      : ok({
+          Items: [{ ...row, status: 'COMPLETE', text: 'second' }],
+          nextCursor: null,
+        }),
+  );
+  render(<App onLocked={vi.fn()} />);
+
+  const user = userEvent.setup();
+
+  await screen.findByText('first');
+  file.mockImplementationOnce(() => failed(503, 'unavailable'));
+  await user.click(screen.getByRole('button', { name: 'Next' }));
+  await screen.findByRole('alert');
+
+  expect(screen.getByText('first')).toBeTruthy();
+  expect(screen.getByText('Page 1')).toBeTruthy();
+
+  await user.click(screen.getByRole('button', { name: 'Next' }));
+  await screen.findByText('second');
+
+  expect(screen.getByText('Page 2')).toBeTruthy();
+  expect(file).toHaveBeenCalledWith({
+    queryParams: { limit: '10', cursor: 'page2' },
+  });
+  expect(screen.getByRole('button', { name: 'Next' }).disabled).toBe(true);
+
+  await user.click(screen.getByRole('button', { name: 'Previous' }));
+  await screen.findByText('first');
+
+  expect(screen.getByText('Page 1')).toBeTruthy();
+});
+
+it('returns to page one after deletion and confirms UNKNOWN cleanup explicitly', async () => {
+  file.mockImplementation(({ queryParams }) =>
+    !queryParams.cursor
+      ? ok({
+          Items: [{ ...row, status: 'COMPLETE', text: 'first' }],
+          nextCursor: 'page2',
+        })
+      : ok({
+          Items: [{ ...row, status: 'UNKNOWN', text: 'second' }],
+          nextCursor: null,
+        }),
+  );
+  render(<App onLocked={vi.fn()} />);
+
+  const user = userEvent.setup();
+
+  await screen.findByText('first');
+  await user.click(screen.getByRole('button', { name: 'Next' }));
+  await screen.findByText('second');
+  window.confirm.mockReturnValueOnce(false);
+  await user.click(screen.getByRole('button', { name: 'X' }));
+
+  expect(api.del).not.toHaveBeenCalled();
+  expect(screen.getByText('second')).toBeTruthy();
+
+  await user.click(screen.getByRole('button', { name: 'X' }));
+  await screen.findByText('first');
+
+  expect(api.del).toHaveBeenCalledWith({
+    apiName: 'backend',
+    path: `/file/${id}`,
+    options: { queryParams: { allowUnknown: 'true' } },
+  });
+  expect(window.confirm).toHaveBeenCalledWith(
+    expect.stringContaining('Late audio'),
+  );
+  expect(screen.getByText('Page 1')).toBeTruthy();
+});
+
+it('polls only while needed, pauses hidden tabs, and clears the timer after completion', async () => {
+  vi.useFakeTimers();
+  file.mockImplementation(() => ok({ Items: [row] }));
+
+  const hidden = vi.spyOn(document, 'hidden', 'get');
+
+  hidden.mockReturnValue(false);
+
+  const view = render(<App onLocked={vi.fn()} />);
+
+  await act(async () => {});
+
+  expect(file).toHaveBeenCalledTimes(1);
+
+  await act(async () => vi.advanceTimersByTimeAsync(9999));
+
+  expect(file).toHaveBeenCalledTimes(1);
+
+  hidden.mockReturnValue(true);
+  act(() => document.dispatchEvent(new Event('visibilitychange')));
+  await act(async () => vi.advanceTimersByTimeAsync(30000));
+
+  expect(file).toHaveBeenCalledTimes(1);
+
+  hidden.mockReturnValue(false);
+  act(() => document.dispatchEvent(new Event('visibilitychange')));
+  await act(async () => {});
+
+  expect(file).toHaveBeenCalledTimes(2);
+
+  file.mockImplementation(() =>
+    ok({ Items: [{ ...row, status: 'COMPLETE' }] }),
+  );
+  await act(async () => vi.advanceTimersByTimeAsync(10000));
+
+  expect(file).toHaveBeenCalledTimes(3);
+
+  await act(async () => vi.advanceTimersByTimeAsync(30000));
+
+  expect(file).toHaveBeenCalledTimes(3);
+
+  file.mockImplementation(() => ok({ Items: [row] }));
+  await act(async () =>
+    fireEvent.click(screen.getByRole('button', { name: 'Refresh' })),
+  );
+
+  expect(vi.getTimerCount()).toBe(1);
+
+  view.unmount();
+
+  expect(vi.getTimerCount()).toBe(0);
+
+  await act(async () => vi.advanceTimersByTimeAsync(30000));
+
+  expect(file).toHaveBeenCalledTimes(4);
+});
+
+it('backs off polling errors and stops before issuing a request after session expiry', async () => {
+  vi.useFakeTimers();
+  file
+    .mockImplementationOnce(() => failed(429, 'throttled'))
+    .mockImplementation(() => ok({ Items: [row] }));
+
+  const locked = vi.fn();
+
+  render(<App onLocked={locked} />);
+  await act(async () => {});
+  await act(async () => vi.advanceTimersByTimeAsync(19999));
+
+  expect(file).toHaveBeenCalledTimes(1);
+
+  await act(async () => vi.advanceTimersByTimeAsync(1));
+
+  expect(file).toHaveBeenCalledTimes(2);
+
+  clearSession();
+  await act(async () => vi.advanceTimersByTimeAsync(10000));
+
+  expect(locked).toHaveBeenCalledWith(
+    'Your session expired. Enter the password again.',
+  );
+  expect(file).toHaveBeenCalledTimes(2);
+});
+
+it('keeps navigation available during background polling but shows loading for a page change', async () => {
+  vi.useFakeTimers();
+  file.mockImplementation(() => ok({ Items: [row], nextCursor: 'page2' }));
+  render(<App onLocked={vi.fn()} />);
+  await act(async () => {});
+
+  let finishPoll;
+  let finishPage;
+
+  file.mockImplementationOnce(() => ({
+    response: new Promise((resolve) => {
+      finishPoll = resolve;
+    }),
+  }));
+  await act(async () => vi.advanceTimersByTimeAsync(10000));
+
+  expect(file).toHaveBeenCalledTimes(2);
+  expect(screen.queryByText('Loading...')).toBeNull();
+  expect(screen.getByRole('button', { name: 'Next' }).disabled).toBe(false);
+  expect(
+    screen.getByRole('button', { name: 'Refresh', exact: true }).disabled,
+  ).toBe(false);
+
+  file.mockImplementationOnce(() => ({
+    response: new Promise((resolve) => {
+      finishPage = resolve;
+    }),
+  }));
+  await act(async () =>
+    fireEvent.click(screen.getByRole('button', { name: 'Next' })),
+  );
+
+  expect(screen.getByText('Loading...')).toBeTruthy();
+  expect(screen.getByRole('button', { name: 'Next' }).disabled).toBe(true);
+
+  await act(async () =>
+    finishPage({
+      body: {
+        json: async () => ({
+          Items: [
+            { ...row, id: 'older', text: 'second page', status: 'COMPLETE' },
+          ],
+        }),
+      },
+    }),
+  );
+  await act(async () =>
+    finishPoll({
+      body: { json: async () => ({ Items: [row], nextCursor: 'page2' }) },
+    }),
+  );
+
+  expect(screen.getByText('Page 2')).toBeTruthy();
+  expect(screen.getByText('second page')).toBeTruthy();
+  expect(screen.queryByText('new recording')).toBeNull();
+});
+
+it.each(['QUEUED', 'COMPLETE'])(
+  'keeps polling for an unlisted %s submission confirmed by Check status',
+  async (status) => {
+    vi.useFakeTimers();
+    api.post.mockImplementation(() => ({
+      response: Promise.reject(new Error('Network error')),
+    }));
+    render(<App onLocked={vi.fn()} />);
+    await act(async () => {});
+    fireEvent.change(screen.getByLabelText('Text to convert'), {
+      target: { value: 'hello' },
+    });
+    await act(async () => fireEvent.submit(document.querySelector('form')));
+
+    const submittedId = api.post.mock.calls[0][0].options.body.requestId;
+
+    api.get.mockImplementationOnce(() =>
+      ok({ ...row, id: submittedId, status }),
+    );
+    await act(async () =>
+      fireEvent.click(screen.getByRole('button', { name: 'Check status' })),
+    );
+
+    expect(file).toHaveBeenCalledTimes(2);
+    expect(screen.getByText('Page 1')).toBeTruthy();
+
+    file.mockImplementation(() =>
+      ok({ Items: [{ ...row, id: submittedId, status: 'COMPLETE' }] }),
+    );
+    await act(async () => vi.advanceTimersByTimeAsync(10000));
+
+    expect(screen.getByText('new recording')).toBeTruthy();
+    expect(screen.getByRole('status').textContent).toContain(
+      'Recording complete.',
+    );
+
+    await act(async () => vi.advanceTimersByTimeAsync(20000));
+
+    expect(file).toHaveBeenCalledTimes(3);
+  },
+);
+
+it('caps waiting for an unlisted recording at two minutes and still allows manual refresh', async () => {
+  vi.useFakeTimers();
+  const newer = Array.from({ length: 10 }, (_, n) => ({
+    ...row,
+    id: `newer-${n}`,
+    status: 'COMPLETE',
+    createdAt: 2000 + n,
+  }));
+
+  file.mockImplementation(() => ok({ Items: newer, nextCursor: 'page2' }));
+  render(<App onLocked={vi.fn()} />);
+  await act(async () => {});
+  fireEvent.change(screen.getByLabelText('Text to convert'), {
+    target: { value: 'hello' },
+  });
+  await act(async () => fireEvent.submit(document.querySelector('form')));
+  api.get.mockImplementationOnce(() => ok({ ...row, status: 'COMPLETE' }));
+  await act(async () =>
+    fireEvent.click(screen.getByRole('button', { name: 'Check status' })),
+  );
+  await act(async () => vi.advanceTimersByTimeAsync(119999));
+
+  const beforeCap = file.mock.calls.length;
+
+  await act(async () => vi.advanceTimersByTimeAsync(1));
+
+  expect(file).toHaveBeenCalledTimes(beforeCap + 1);
+
+  const calls = file.mock.calls.length;
+
+  await act(async () => vi.advanceTimersByTimeAsync(120000));
+
+  expect(file).toHaveBeenCalledTimes(calls);
+  expect(screen.getByRole('button', { name: 'Next' }).disabled).toBe(false);
+
+  file.mockImplementation(() =>
+    ok({
+      Items: [
+        { ...row, text: 'Previously unlisted recording', status: 'COMPLETE' },
+      ],
+    }),
+  );
+  await act(async () =>
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Refresh', exact: true }),
+    ),
+  );
+
+  expect(screen.getByText('Previously unlisted recording')).toBeTruthy();
+});
+
+it('keeps polling visible active recordings beyond the unlisted-recording cap', async () => {
+  vi.useFakeTimers();
+  file.mockImplementation(() => ok({ Items: [row] }));
+  render(<App onLocked={vi.fn()} />);
+  await act(async () => {});
+  await act(async () => vi.advanceTimersByTimeAsync(120000));
+
+  const calls = file.mock.calls.length;
+
+  await act(async () => vi.advanceTimersByTimeAsync(10000));
+
+  expect(file).toHaveBeenCalledTimes(calls + 1);
+  expect(screen.getByText('QUEUED')).toBeTruthy();
+});
+
+it('polls until completion and updates the confirmation without clearing the next draft', async () => {
+  vi.useFakeTimers();
+  render(<App onLocked={vi.fn()} />);
+  await act(async () => {});
+  fireEvent.change(screen.getByLabelText('Text to convert'), {
+    target: { value: 'hello' },
+  });
+  await act(async () => fireEvent.submit(document.querySelector('form')));
+
+  expect(file).toHaveBeenCalledTimes(2);
+  expect(screen.getByRole('status').textContent).toContain('Recording queued.');
+
+  fireEvent.change(screen.getByLabelText('Text to convert'), {
+    target: { value: 'My next recording' },
+  });
+
+  file.mockImplementation(() => ok({ Items: [row] }));
+  await act(async () => vi.advanceTimersByTimeAsync(10000));
+
+  expect(screen.getByText('new recording')).toBeTruthy();
+  expect(screen.getByRole('button', { name: 'X' }).disabled).toBe(true);
+
+  file.mockImplementation(() =>
+    ok({ Items: [{ ...row, status: 'PROCESSING' }] }),
+  );
+  await act(async () => vi.advanceTimersByTimeAsync(10000));
+
+  expect(screen.getByRole('status').textContent).toContain(
+    'Recording processing.',
+  );
+
+  file.mockImplementation(() =>
+    ok({ Items: [{ ...row, status: 'COMPLETE' }] }),
+  );
+  await act(async () => vi.advanceTimersByTimeAsync(10000));
+
+  expect(screen.getByRole('button', { name: 'X' }).disabled).toBe(false);
+  expect(screen.getByRole('status').textContent).toContain(
+    'Recording complete.',
+  );
+  expect(screen.getByLabelText('Text to convert').value).toBe(
+    'My next recording',
+  );
+
+  await act(async () => vi.advanceTimersByTimeAsync(20000));
+
+  expect(file).toHaveBeenCalledTimes(5);
+});
+
+it('only follows the submitted recording and retains its failure when leaving the page', async () => {
+  const props = { onAccepted: vi.fn(), onChecked: vi.fn(), onLocked: vi.fn() };
+  const view = render(<Form {...props} recordings={[]} />);
+  const user = userEvent.setup();
+
+  await user.type(screen.getByLabelText('Text to convert'), 'hello');
+  await user.click(screen.getByRole('button', { name: 'Submit', exact: true }));
+  await user.type(
+    screen.getByLabelText('Text to convert'),
+    'My next recording',
+  );
+
+  view.rerender(
+    <Form
+      {...props}
+      recordings={[
+        { ...row, id: 'other', status: 'FAILED', message: 'Unrelated failure' },
+      ]}
+    />,
+  );
+
+  expect(screen.getByRole('status').textContent).toContain('Recording queued.');
+
+  view.rerender(
+    <Form
+      {...props}
+      recordings={[
+        {
+          ...row,
+          status: 'FAILED',
+          message: 'Polly could not synthesize this recording.',
+        },
+      ]}
+    />,
+  );
+
+  expect(screen.getByRole('status').textContent).toBe(
+    'Polly could not synthesize this recording.',
+  );
+  expect(screen.getByLabelText('Text to convert').value).toBe(
+    'My next recording',
+  );
+
+  view.rerender(<Form {...props} recordings={[]} />);
+
+  expect(screen.getByRole('status').textContent).toBe(
+    'Polly could not synthesize this recording.',
+  );
+});
+
+it('does not show the previous recording as complete while a new submission is in flight', async () => {
+  const props = { onAccepted: vi.fn(), onChecked: vi.fn(), onLocked: vi.fn() };
+  const view = render(<Form {...props} recordings={[]} />);
+  const user = userEvent.setup();
+
+  await user.type(screen.getByLabelText('Text to convert'), 'First recording');
+  await user.click(screen.getByRole('button', { name: 'Submit', exact: true }));
+
+  let finish;
+
+  api.post.mockImplementationOnce(() => ({
+    response: new Promise((resolve) => {
+      finish = resolve;
+    }),
+  }));
+  await user.type(screen.getByLabelText('Text to convert'), 'Second recording');
+  await user.click(screen.getByRole('button', { name: 'Submit', exact: true }));
+  view.rerender(
+    <Form {...props} recordings={[{ ...row, status: 'COMPLETE' }]} />,
+  );
+
+  expect(screen.getByRole('status').textContent).toBe('Submitting...');
+
+  await act(async () =>
+    finish({
+      body: {
+        json: async () => ({
+          ...row,
+          id: '22345678-1234-4123-8123-123456789abc',
+        }),
+      },
+    }),
+  );
+
+  expect(screen.getByRole('status').textContent).toContain('Recording queued.');
+});
+
+it('keeps the current page when the form checks a submission status', async () => {
+  const older = {
+    ...row,
+    id: 'older',
+    status: 'COMPLETE',
+    text: 'older recording',
+  };
+
+  file.mockImplementation(({ queryParams }) =>
+    ok({ Items: [older], nextCursor: queryParams.cursor ? null : 'page2' }),
+  );
+  api.post.mockImplementation(() => ok({ ...row, status: 'UNKNOWN' }));
+  render(<App onLocked={vi.fn()} />);
+
+  const user = userEvent.setup();
+
+  await screen.findByText('older recording');
+  await user.type(screen.getByLabelText('Text to convert'), 'hello');
+  await user.click(screen.getByRole('button', { name: 'Submit', exact: true }));
+  await user.click(screen.getByRole('button', { name: 'Next' }));
+
+  expect(screen.getByText('Page 2')).toBeTruthy();
+
+  await user.click(screen.getByRole('button', { name: 'Check status' }));
+
+  expect(screen.getByText('Page 2')).toBeTruthy();
+  expect(file.mock.lastCall[0].queryParams.cursor).toBe('page2');
+  expect(screen.getByRole('status').textContent).toContain('queued');
+});
+
+it('pauses waiting for an unlisted submission on later pages and resumes on page one', async () => {
+  vi.useFakeTimers();
+  const older = {
+    ...row,
+    id: 'older',
+    status: 'COMPLETE',
+    text: 'older recording',
+  };
+
+  file.mockImplementation(() => ok({ Items: [older], nextCursor: 'page2' }));
+  render(<App onLocked={vi.fn()} />);
+  await act(async () => {});
+  fireEvent.change(screen.getByLabelText('Text to convert'), {
+    target: { value: 'hello' },
+  });
+  await act(async () => fireEvent.submit(document.querySelector('form')));
+  await act(async () =>
+    fireEvent.click(screen.getByRole('button', { name: 'Next' })),
+  );
+
+  const calls = file.mock.calls.length;
+
+  expect(screen.getByText('Page 2')).toBeTruthy();
+
+  await act(async () => vi.advanceTimersByTimeAsync(30000));
+
+  expect(file).toHaveBeenCalledTimes(calls);
+
+  await act(async () =>
+    fireEvent.click(screen.getByRole('button', { name: 'Previous' })),
+  );
+  file.mockImplementation(() =>
+    ok({ Items: [{ ...row, status: 'COMPLETE' }] }),
+  );
+  await act(async () => vi.advanceTimersByTimeAsync(10000));
+
+  expect(screen.getByText('new recording')).toBeTruthy();
+
+  await act(async () => vi.advanceTimersByTimeAsync(20000));
+
+  expect(file).toHaveBeenCalledTimes(calls + 2);
+});
+
+it('ignores a response from a previous page load after a submission resets the page', async () => {
+  let resolve;
+
+  file
+    .mockImplementationOnce(() => ({
+      response: new Promise((done) => {
+        resolve = done;
+      }),
+    }))
+    .mockImplementation(() => ok({ Items: [{ ...row, status: 'COMPLETE' }] }));
+  render(<App onLocked={vi.fn()} />);
+
+  const user = userEvent.setup();
+
+  await user.type(screen.getByLabelText('Text to convert'), 'hello');
+  await user.click(screen.getByRole('button', { name: 'Submit', exact: true }));
+  await screen.findByText('new recording');
+  await act(async () =>
+    resolve({
+      body: {
+        json: async () => ({ Items: [{ ...row, text: 'stale response' }] }),
+      },
+    }),
+  );
+
+  expect(screen.queryByText('stale response')).toBeNull();
+  expect(screen.getByText('new recording')).toBeTruthy();
+});

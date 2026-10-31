@@ -25,3 +25,10 @@ thead, tr:nth-child(even) {
   color: black;
   border: 1px solid black;
 }
+
+.pagination {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin: 1rem 0;
+}

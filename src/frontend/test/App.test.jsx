@@ -3,6 +3,7 @@ import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 const api = vi.hoisted(() => ({ get: vi.fn(), post: vi.fn(), del: vi.fn() }));
+
 vi.mock('aws-amplify/api', () => api);
 
 import App from '../src/components/App.jsx';
@@ -51,14 +52,18 @@ afterEach(() => {
 describe('App auth handling', () => {
   it('calls onLocked when GET /file returns 401', async () => {
     routes['/file'] = () => fail(httpError(401));
+
     const onLocked = vi.fn();
+
     render(<App onLocked={onLocked} />);
     await waitFor(() => expect(onLocked).toHaveBeenCalledWith(EXPIRED));
   });
 
   it('calls onLocked when GET /file returns 403', async () => {
     routes['/file'] = () => fail(httpError(403));
+
     const onLocked = vi.fn();
+
     render(<App onLocked={onLocked} />);
     await waitFor(() => expect(onLocked).toHaveBeenCalledWith(EXPIRED));
   });
@@ -66,7 +71,9 @@ describe('App auth handling', () => {
   it('calls onLocked when a request fails and there is no session', async () => {
     clearSession();
     routes['/voices'] = () => fail(new Error('Network error'));
+
     const onLocked = vi.fn();
+
     render(<App onLocked={onLocked} />);
     await waitFor(() => expect(onLocked).toHaveBeenCalledWith(EXPIRED));
   });
@@ -74,68 +81,94 @@ describe('App auth handling', () => {
   it('calls onLocked when GET /file fails and there is no session', async () => {
     clearSession();
     routes['/file'] = () => fail(new Error('Network error'));
+
     const onLocked = vi.fn();
+
     render(<App onLocked={onLocked} />);
     await waitFor(() => expect(onLocked).toHaveBeenCalledWith(EXPIRED));
+
     expect(console.error).not.toHaveBeenCalled();
   });
 
   it('does not call onLocked for a network error while the session is valid', async () => {
     routes['/file'] = () => fail(new Error('Network error'));
     routes['/voices'] = () => fail(new Error('Network error'));
+
     const onLocked = vi.fn();
+
     render(<App onLocked={onLocked} />);
     await waitFor(() => expect(console.error).toHaveBeenCalled());
     await screen.findByText(/No converted text to speech records found/);
+
     expect(onLocked).not.toHaveBeenCalled();
   });
 
   it('calls onLocked when GET /voices returns 403', async () => {
     routes['/voices'] = () => fail(httpError(403));
+
     const onLocked = vi.fn();
+
     render(<App onLocked={onLocked} />);
     await waitFor(() => expect(onLocked).toHaveBeenCalledWith(EXPIRED));
+
     expect(console.error).not.toHaveBeenCalled();
   });
 
   it('calls onLocked when POST /file fails and there is no session', async () => {
     api.post.mockImplementation(() => fail(new Error('Network error')));
+
     const onLocked = vi.fn();
+
     render(<App onLocked={onLocked} />);
+
     const user = userEvent.setup();
+
     await screen.findByText('hello');
     await user.type(document.querySelector('textarea'), 'some text');
     clearSession();
     await user.click(screen.getByRole('button', { name: 'Submit' }));
     await waitFor(() => expect(onLocked).toHaveBeenCalledWith(EXPIRED));
+
     expect(screen.queryByText(/An error occurred/)).toBeNull();
   });
 
   it('calls onLocked when DELETE returns 403', async () => {
     api.del.mockImplementation(() => fail(httpError(403)));
+
     const onLocked = vi.fn();
+
     render(<App onLocked={onLocked} />);
     await userEvent.click(await screen.findByRole('button', { name: 'X' }));
     await waitFor(() => expect(onLocked).toHaveBeenCalledWith(EXPIRED));
+
     expect(window.alert).not.toHaveBeenCalled();
   });
 
   it('calls onLocked when DELETE fails and there is no session', async () => {
     api.del.mockImplementation(() => fail(new Error('Network error')));
+
     const onLocked = vi.fn();
+
     render(<App onLocked={onLocked} />);
+
     const button = await screen.findByRole('button', { name: 'X' });
+
     clearSession();
     await userEvent.click(button);
     await waitFor(() => expect(onLocked).toHaveBeenCalledWith(EXPIRED));
+
     expect(window.alert).not.toHaveBeenCalled();
   });
 
   it('calls onLocked when POST /file returns 401', async () => {
     api.post.mockImplementation(() => fail(httpError(401)));
+
     const onLocked = vi.fn();
+
     render(<App onLocked={onLocked} />);
+
     const user = userEvent.setup();
+
     await screen.findByText('hello');
     await user.type(document.querySelector('textarea'), 'some text');
     await user.click(screen.getByRole('button', { name: 'Submit' }));
@@ -144,9 +177,11 @@ describe('App auth handling', () => {
 
   it('the Lock button calls onLocked', async () => {
     const onLocked = vi.fn();
+
     render(<App onLocked={onLocked} />);
     await screen.findByText('hello');
     await userEvent.click(screen.getByRole('button', { name: 'Lock' }));
+
     expect(onLocked).toHaveBeenCalledTimes(1);
     expect(onLocked).toHaveBeenCalledWith();
   });

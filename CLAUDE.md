@@ -8,6 +8,10 @@ There's no root `package.json`. Each Lambda directory, `src/frontend` and `test/
 - **One frontend test file:** `npx --prefix src/frontend vitest run --root src/frontend <path>`. Without `--root`, Vitest won't find its config.
 - **Don't run unless asked:** `sam deploy`, `sam build`, `aws` CLI commands, or `npm run production`. That last one overwrites the gitignored `src/frontend/src/config.js`, which CodeBuild generates at deploy time.
 
+## Style
+
+Use braces and multiline control flow. Separate validation, setup, side effects, and assertions with blank lines. Prettier handles layout; ESLint enforces braces.
+
 ## Security rules
 
 - **Request logging:** handlers never log the raw event, which carries the `Authorization` header. Log only `requestContext?.requestId` and `routeKey`. (`src/WebsiteBuildTrigger` is exempt.)

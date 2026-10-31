@@ -5,7 +5,10 @@ const STORAGE_KEY = 'tts.session';
 let memorySession = null;
 
 function readRaw() {
-  if (memorySession) return JSON.stringify(memorySession);
+  if (memorySession) {
+    return JSON.stringify(memorySession);
+  }
+
   try {
     return localStorage.getItem(STORAGE_KEY);
   } catch {
@@ -15,9 +18,14 @@ function readRaw() {
 
 export function getSession() {
   const raw = readRaw();
-  if (raw === null) return null;
+
+  if (raw === null) {
+    return null;
+  }
+
   try {
     const parsed = JSON.parse(raw);
+
     if (
       parsed &&
       typeof parsed.token === 'string' &&
@@ -29,12 +37,15 @@ export function getSession() {
   } catch {
     // fall through to clearing the entry
   }
+
   clearSession();
+
   return null;
 }
 
 export function saveSession({ token, expiresAt }) {
   memorySession = { token, expiresAt };
+
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(memorySession));
   } catch {
@@ -44,6 +55,7 @@ export function saveSession({ token, expiresAt }) {
 
 export function clearSession() {
   memorySession = null;
+
   try {
     localStorage.removeItem(STORAGE_KEY);
   } catch {

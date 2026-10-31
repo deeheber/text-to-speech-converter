@@ -24,16 +24,22 @@ describe('session', () => {
 
   it('saves, reads and clears a session', () => {
     const expiresAt = future();
+
     saveSession({ token: 'abc', expiresAt });
+
     expect(getSession()).toEqual({ token: 'abc', expiresAt });
+
     clearSession();
+
     expect(getSession()).toBeNull();
     expect(localStorage.getItem('tts.session')).toBeNull();
   });
 
   it('treats an expired session as null and removes it', () => {
     const expiresAt = Math.floor(Date.now() / 1000) - 1;
+
     saveSession({ token: 'abc', expiresAt });
+
     expect(getSession()).toBeNull();
     expect(localStorage.getItem('tts.session')).toBeNull();
   });
@@ -41,8 +47,11 @@ describe('session', () => {
   it('treats a session expiring exactly now as expired', () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2030-01-01T00:00:00Z'));
+
     const expiresAt = Math.floor(Date.now() / 1000);
+
     saveSession({ token: 'abc', expiresAt });
+
     expect(getSession()).toBeNull();
     expect(localStorage.getItem('tts.session')).toBeNull();
   });
@@ -58,6 +67,7 @@ describe('session', () => {
       JSON.stringify({ token: 'abc' }),
     ]) {
       localStorage.setItem('tts.session', raw);
+
       expect(getSession()).toBeNull();
       expect(localStorage.getItem('tts.session')).toBeNull();
     }
@@ -65,6 +75,7 @@ describe('session', () => {
 
   it('never writes a password to localStorage', () => {
     saveSession({ token: 'abc', expiresAt: future(), password: 'hunter2' });
+
     expect(localStorage.length).toBe(1);
     expect(localStorage.key(0)).toBe('tts.session');
     expect(localStorage.getItem('tts.session')).not.toContain('hunter2');
@@ -72,26 +83,38 @@ describe('session', () => {
 
   it('returns null instead of throwing when storage is blocked', () => {
     blockStorage();
+
     expect(getSession()).toBeNull();
     expect(() => clearSession()).not.toThrow();
   });
 
   it('keeps the new session when storage is full', () => {
-    localStorage.setItem('tts.session', JSON.stringify({ token: 'old', expiresAt: future() }));
+    localStorage.setItem(
+      'tts.session',
+      JSON.stringify({ token: 'old', expiresAt: future() }),
+    );
     vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
       throw new DOMException('Quota exceeded', 'QuotaExceededError');
     });
+
     const expiresAt = future();
+
     saveSession({ token: 'new', expiresAt });
+
     expect(getSession()).toEqual({ token: 'new', expiresAt });
   });
 
   it('keeps the session in memory when storage is blocked', () => {
     blockStorage();
+
     const expiresAt = future();
+
     saveSession({ token: 'abc', expiresAt });
+
     expect(getSession()).toEqual({ token: 'abc', expiresAt });
+
     clearSession();
+
     expect(getSession()).toBeNull();
   });
 });

@@ -20,7 +20,7 @@ export const handler = async (event) => {
     console.log(
       `curl -X PUT '${
         event.ResponseURL
-      }' -H 'Content-Type:' -d '${JSON.stringify(failureResponse)}'`
+      }' -H 'Content-Type:' -d '${JSON.stringify(failureResponse)}'`,
     );
 
     switch (event.RequestType) {
@@ -33,13 +33,14 @@ export const handler = async (event) => {
           event.PhysicalResourceId,
           null,
           'SUCCESS',
-          event
+          event,
         );
 
       default:
         console.log(
-          `Unhandled event.RequestType: ${event.RequestType}, manually cancel using curl command above`
+          `Unhandled event.RequestType: ${event.RequestType}, manually cancel using curl command above`,
         );
+
         return;
     }
   } else if (event.source === 'aws.codebuild') {
@@ -86,13 +87,15 @@ const startCodeBuild = async (message) => {
     await client.send(command);
   } catch (err) {
     const msg = `Failed to start CodeBuild project: ${err.message}`;
+
     console.log(msg);
+
     return sendProvisionResponse(
       message.PhysicalResourceId || 'resource',
       null,
       'FAILED',
       message,
-      msg
+      msg,
     );
   }
 };
@@ -107,10 +110,12 @@ const handleCodeBuildEvent = async (message) => {
   const environmentVariables =
     detail['additional-information'].environment['environment-variables'];
   const map = {};
+
   for (let i = 0; i < environmentVariables.length; i++) {
     const item = environmentVariables[i];
     const name = item.name;
     const value = item.value;
+
     map[name] = value;
   }
 
@@ -132,7 +137,7 @@ const handleCodeBuildEvent = async (message) => {
     ) {
       missingCFParams = true;
       throw new Error(
-        "Missing Cloudformation params, can't send response to CF."
+        "Missing Cloudformation params, can't send response to CF.",
       );
     }
 
@@ -149,7 +154,7 @@ const handleCodeBuildEvent = async (message) => {
           null,
           'FAILED',
           body,
-          `Failed to publish site, see ${consoleLink}`
+          `Failed to publish site, see ${consoleLink}`,
         );
       default:
         throw new Error(`Unrecognized build status: ${detail['build-status']}`);
@@ -166,7 +171,7 @@ const handleCodeBuildEvent = async (message) => {
         null,
         'FAILED',
         body,
-        error.message
+        error.message,
       );
     }
   }

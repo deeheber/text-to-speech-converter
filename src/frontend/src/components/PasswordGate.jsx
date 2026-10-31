@@ -21,6 +21,7 @@ function PasswordGate() {
   if (unlocked) {
     return <App onLocked={lock} />;
   }
+
   return <PasswordForm onUnlocked={handleUnlocked} notice={notice} />;
 }
 

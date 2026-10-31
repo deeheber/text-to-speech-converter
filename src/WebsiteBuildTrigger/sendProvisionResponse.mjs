@@ -5,9 +5,10 @@ export const sendProvisionResponse = async (
   attributes,
   status,
   message,
-  reason
+  reason,
 ) => {
   let deadline;
+
   return new Promise((resolve, reject) => {
     const responseUrl = new URL(message.ResponseURL);
     const response = {
@@ -21,29 +22,34 @@ export const sendProvisionResponse = async (
     };
 
     console.log(
-      `Sending response back to CloudFormation: ${JSON.stringify(response, null, 2)}`
+      `Sending response back to CloudFormation: ${JSON.stringify(response, null, 2)}`,
     );
 
     const req = request(responseUrl, { method: 'PUT' }, (res) => {
       res.resume();
+
       if (res.statusCode === 200) {
         resolve();
       } else {
         reject(
-          new Error(`Bad response from CloudFormation Response URL: ${res.statusCode}`)
+          new Error(
+            `Bad response from CloudFormation Response URL: ${res.statusCode}`,
+          ),
         );
       }
     });
 
     req.on('error', (err) => {
       reject(
-        new Error(`Error while sending response to CloudFormation: ${err.message}`)
+        new Error(
+          `Error while sending response to CloudFormation: ${err.message}`,
+        ),
       );
     });
 
     deadline = setTimeout(() => {
       reject(
-        new Error('Timed out sending response to CloudFormation after 10000ms')
+        new Error('Timed out sending response to CloudFormation after 10000ms'),
       );
       req.destroy();
     }, 10000);

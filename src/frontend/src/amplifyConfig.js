@@ -9,6 +9,7 @@ export function configureAmplify(config) {
         REST: {
           headers: async () => {
             const s = getSession();
+
             return s ? { Authorization: s.token } : {};
           },
         },

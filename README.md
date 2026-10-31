@@ -12,7 +12,7 @@ Browser ── CloudFront ── S3 (frontend)
    │                         ▲
    └── API Gateway ── Lambda ─┤
          │              ├──── DynamoDB
-         │              └──── Polly
+         │              └──── Polly (background tasks → S3)
          └── TokenAuthorizer (Lambda) ── Secrets Manager
 
 CodeBuild ── S3 (frontend)
@@ -27,7 +27,9 @@ sam build
 sam deploy --guided
 ```
 
-Set the `SourceVersion` parameter to the Git SHA to deploy. CodeBuild clones this public repo at that SHA to build the frontend ([details](src/WebsiteBuildTrigger/README.md)), so the commit must be pushed. Then open `FrontendURL` from the stack outputs.
+Set the `SourceVersion` parameter to the Git SHA to deploy. CodeBuild clones this public repo at that SHA to build the frontend ([details](src/WebsiteBuildTrigger/README.md)), so the commit must be pushed. Wait for the `RecordingsByCreatedAt` index to become `ACTIVE`, then open `FrontendURL` from the stack outputs. CloudFormation can finish its update before an added index is ready.
+
+Only recordings created with this version appear in the library. Older metadata and audio remain in AWS but cannot be listed or deleted through the app. There is no migration or automatic cleanup; this is a single-user test app.
 
 ## Site password
 
@@ -50,9 +52,22 @@ All routes except `/login` need `Authorization: <token>`.
 |---|---|
 | `POST /login` | `{"password": "..."}` → `{"token", "expiresAt"}` |
 | `GET /voices` | Voices for the dropdown |
-| `GET /file` | List conversions |
-| `POST /file` | Create a conversion |
-| `DELETE /file/{id}` | Delete a conversion |
+| `GET /file?limit=10&cursor=...` | `{Items, nextCursor}`; newest first, default 10 and maximum 50 rows |
+| `POST /file` | `{requestId, text, voice?}` → HTTP 202 with the accepted recording |
+| `GET /file/{id}` | Check one recording and refresh its status |
+| `DELETE /file/{id}` | Delete a terminal recording and its audio |
+
+Use a UUID v4 for `requestId`. Retries return its existing recording, including failures; different text or effective voice returns `409`. New attempts need a new UUID. Deduplication ends when the record is deleted.
+
+Text is plain text, limited to 100,000 UTF-16 code units (JavaScript `text.length`); emoji may count as two. The default voice is Matthew. Only the first 1,500 Unicode code points are stored as a preview.
+
+Recordings move through `STARTING`, `QUEUED`, and `PROCESSING` to `COMPLETE` or `FAILED`. `UNKNOWN` means the outcome could not be confirmed. Only `COMPLETE` has a download URL. Definite Polly rejections return a `FAILED` record with an error status; ambiguous starts return `202` with `UNKNOWN`.
+
+The browser refreshes the visible page every 10 seconds while visible jobs are active. It also waits up to two minutes for an unlisted recording after submission or a status check; use Refresh or Next if it still has not appeared. Refresh pauses in hidden tabs and backs off to 60 seconds on errors.
+
+The index orders by creation time, then recording ID descending for equal timestamps. It is eventually consistent; pages do not represent a frozen snapshot while records are created or deleted. Follow `nextCursor` until it is `null` and pass the cursor unchanged.
+
+Active jobs cannot be cancelled or deleted (`409`). Removing an `UNKNOWN` recording requires `DELETE /file/{id}?allowUnknown=true`; the UI asks for confirmation. This deletes currently discoverable audio, but a late Polly output may still need manual S3 cleanup. Failed deletions retain metadata so Delete can be retried.
 
 ## Run the frontend locally
 
@@ -84,10 +99,21 @@ done
 sam validate --lint
 ```
 
+Formatting and linting use the frontend development dependencies:
+
+```sh
+npm run format:check --prefix src/frontend
+npm run lint --prefix src/frontend
+npm run lint:backend --prefix src/frontend
+```
+
+Use `npm run format --prefix src/frontend` to format source and tests.
+
 ## Known limitations
 
-- `CreateNewFile` uses Lambda's default 512 MB `/tmp`. For very large requests, add [EphemeralStorage](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-resource-function.html#sam-function-ephemeralstorage).
-- `GET /file` scans the whole DynamoDB table with no pagination.
+- Status updates happen when the app is opened or refreshed. [Polly retains task history for 72 hours](https://docs.aws.amazon.com/polly/latest/APIReference/API_StartSpeechSynthesisTask.html). After that, S3 output can establish completion, but missing output cannot establish failure.
+- A lost start response can leave a job `UNKNOWN`. **Check status** looks for its output in S3. Missing or ambiguous output remains uncertain; another attempt may produce duplicate audio.
+- Uncertain submission IDs and text are kept in browser memory. Reloading or locking clears that form state.
 
 ## Contributing
 
