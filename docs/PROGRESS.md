@@ -14,7 +14,7 @@ Started: 2026-10-31T17:18:59.941Z
 - [x] P0-07 Document the password, rotation and deploy order in the README
 - [x] P0-08 Phase 0 checkpoint: push and list manual API checks
 - [x] P1-01 Add Vitest and the session store
-- [ ] P1-02 Add the login API client and the Amplify configuration
+- [x] P1-02 Add the login API client and the Amplify configuration
 - [ ] P1-03 Add the password form
 - [ ] P1-04 Add the Lock button and auth-error handling to App, Form and Table
 - [ ] P1-05 Add the password gate and render it from index.jsx
@@ -71,3 +71,7 @@ Manual check: NOT VERIFIED (human)
 ### P1-01 — 86bfb49
 
 Tests: 4 in src/frontend/test/session.test.js. Installed vitest@^5 (5.0.5, peer vite ^8), jsdom, @testing-library/react, @testing-library/user-event; test script "vitest run"; vite.config.js test.environment jsdom, no globals. session.js: key tts.session, getSession removes bad/expired entries.
+
+### P1-02 — 7bffef0
+
+Tests: api.test.js (3), amplifyConfig.test.js (3). Pattern: vi.hoisted mock fn + vi.mock('aws-amplify' / 'aws-amplify/api'). api.js exports login, isAuthError; amplifyConfig.js exports configureAmplify(config) using config.backendAPI. No interpretation choices.
