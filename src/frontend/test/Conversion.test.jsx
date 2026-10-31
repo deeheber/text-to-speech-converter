@@ -130,7 +130,7 @@ it('requires confirmation before a new attempt and generates a fresh UUID', asyn
   expect(api.post.mock.calls[1][0].options.body.text).toBe('hello');
 });
 
-it('recovers a network failure through Check status without starting another conversion', async () => {
+it('recovers a network failure and preserves later drafts during status checks', async () => {
   api.post.mockImplementation(() => ({
     response: Promise.reject(new Error('Network error')),
   }));
@@ -154,7 +154,74 @@ it('recovers a network failure through Check status without starting another con
   expect(api.post).toHaveBeenCalledTimes(1);
   expect(checked).toHaveBeenCalledWith(row);
   expect(screen.getByLabelText('Text to convert').value).toBe('');
+
+  await user.type(screen.getByLabelText('Text to convert'), 'My next draft');
+
+  for (const status of ['PROCESSING', 'COMPLETE']) {
+    api.get.mockImplementationOnce(() => ok({ ...row, status }));
+    await user.click(screen.getByRole('button', { name: 'Check status' }));
+
+    expect(screen.getByLabelText('Text to convert').value).toBe(
+      'My next draft',
+    );
+    expect(screen.getByRole('status').textContent).toContain(
+      `Recording ${status.toLowerCase()}.`,
+    );
+  }
 });
+
+it.each([
+  ['STARTING', 'QUEUED', '', 'Recording queued.'],
+  ['UNKNOWN', 'COMPLETE', '', 'Recording complete.'],
+  ['UNKNOWN', 'FAILED', 'Original text', 'Conversion failed.'],
+])(
+  'syncs %s to listed %s and releases the retry UUID',
+  async (initial, status, remainingText, confirmation) => {
+    api.post.mockImplementation(({ options }) =>
+      ok({ ...row, id: options.body.requestId, status: initial }),
+    );
+    const props = {
+      onAccepted: vi.fn(),
+      onChecked: vi.fn(),
+      onLocked: vi.fn(),
+    };
+    const view = render(<Form {...props} recordings={[]} />);
+    const user = userEvent.setup();
+
+    await user.type(screen.getByLabelText('Text to convert'), 'Original text');
+    await user.click(
+      screen.getByRole('button', { name: 'Submit', exact: true }),
+    );
+
+    const original = api.post.mock.calls[0][0].options.body;
+
+    expect(screen.getByLabelText('Text to convert').disabled).toBe(true);
+
+    view.rerender(
+      <Form
+        {...props}
+        recordings={[{ ...row, id: original.requestId, status }]}
+      />,
+    );
+
+    const text = screen.getByLabelText('Text to convert');
+
+    expect(text.disabled).toBe(false);
+    expect(text.value).toBe(remainingText);
+    expect(screen.getByRole('status').textContent).toContain(confirmation);
+
+    await user.clear(text);
+    await user.type(text, 'My next draft');
+    await user.click(
+      screen.getByRole('button', { name: 'Submit', exact: true }),
+    );
+
+    const next = api.post.mock.calls[1][0].options.body;
+
+    expect(next.requestId).not.toBe(original.requestId);
+    expect(next.text).toBe('My next draft');
+  },
+);
 
 it('keeps rejected text editable, and enforces the same UTF-16 length at submission', async () => {
   api.post.mockImplementation(() =>
@@ -436,6 +503,72 @@ it('keeps polling for a status-confirmed submission until it appears in the inde
   await act(async () => vi.advanceTimersByTimeAsync(20000));
 
   expect(file).toHaveBeenCalledTimes(3);
+});
+
+it('caps waiting for an unlisted recording at two minutes and still allows manual refresh', async () => {
+  vi.useFakeTimers();
+  const newer = Array.from({ length: 10 }, (_, n) => ({
+    ...row,
+    id: `newer-${n}`,
+    status: 'COMPLETE',
+    createdAt: 2000 + n,
+  }));
+
+  file.mockImplementation(() => ok({ Items: newer, nextCursor: 'page2' }));
+  render(<App onLocked={vi.fn()} />);
+  await act(async () => {});
+  fireEvent.change(screen.getByLabelText('Text to convert'), {
+    target: { value: 'hello' },
+  });
+  await act(async () => fireEvent.submit(document.querySelector('form')));
+  api.get.mockImplementationOnce(() => ok({ ...row, status: 'COMPLETE' }));
+  await act(async () =>
+    fireEvent.click(screen.getByRole('button', { name: 'Check status' })),
+  );
+  await act(async () => vi.advanceTimersByTimeAsync(119999));
+
+  const beforeCap = file.mock.calls.length;
+
+  await act(async () => vi.advanceTimersByTimeAsync(1));
+
+  expect(file).toHaveBeenCalledTimes(beforeCap + 1);
+
+  const calls = file.mock.calls.length;
+
+  await act(async () => vi.advanceTimersByTimeAsync(120000));
+
+  expect(file).toHaveBeenCalledTimes(calls);
+  expect(screen.getByRole('button', { name: 'Next' }).disabled).toBe(false);
+
+  file.mockImplementation(() =>
+    ok({
+      Items: [
+        { ...row, text: 'Previously unlisted recording', status: 'COMPLETE' },
+      ],
+    }),
+  );
+  await act(async () =>
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Refresh', exact: true }),
+    ),
+  );
+
+  expect(screen.getByText('Previously unlisted recording')).toBeTruthy();
+});
+
+it('keeps polling visible active recordings beyond the unlisted-recording cap', async () => {
+  vi.useFakeTimers();
+  file.mockImplementation(() => ok({ Items: [row] }));
+  render(<App onLocked={vi.fn()} />);
+  await act(async () => {});
+  await act(async () => vi.advanceTimersByTimeAsync(120000));
+
+  const calls = file.mock.calls.length;
+
+  await act(async () => vi.advanceTimersByTimeAsync(10000));
+
+  expect(file).toHaveBeenCalledTimes(calls + 1);
+  expect(screen.getByText('QUEUED')).toBeTruthy();
 });
 
 it('polls until completion and updates the confirmation without clearing the next draft', async () => {

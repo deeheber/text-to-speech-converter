@@ -8,6 +8,7 @@ import '../styles/App.css';
 
 const active = (row) =>
   ['STARTING', 'QUEUED', 'PROCESSING'].includes(row.status);
+const unlistedWaitMs = 2 * 60 * 1000;
 
 function App({ onLocked }) {
   const [page, setPage] = useState({
@@ -19,7 +20,7 @@ function App({ onLocked }) {
   const [target, setTarget] = useState({ cursor: null, history: [] });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
-  const pendingIds = useRef(new Set());
+  const pendingIds = useRef(new Map());
 
   useEffect(() => {
     let subscribed = true;
@@ -69,6 +70,12 @@ function App({ onLocked }) {
 
         if (!subscribed) {
           return;
+        }
+
+        for (const [id, expiresAt] of pendingIds.current) {
+          if (Date.now() >= expiresAt) {
+            pendingIds.current.delete(id);
+          }
         }
 
         Items.forEach((row) => pendingIds.current.delete(row.id));
@@ -133,7 +140,7 @@ function App({ onLocked }) {
   }, [target, onLocked]);
 
   const accepted = useCallback((row) => {
-    pendingIds.current.add(row.id);
+    pendingIds.current.set(row.id, Date.now() + unlistedWaitMs);
     setTarget({ cursor: null, history: [] });
   }, []);
   const deleted = useCallback((id) => {
@@ -142,7 +149,7 @@ function App({ onLocked }) {
   }, []);
   const checked = useCallback((row) => {
     if (active(row)) {
-      pendingIds.current.add(row.id);
+      pendingIds.current.set(row.id, Date.now() + unlistedWaitMs);
     }
 
     setPage((current) => ({

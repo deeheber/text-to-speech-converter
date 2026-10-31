@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { get, post } from 'aws-amplify/api';
 import { isAuthError } from '../api';
 import { getSession } from '../session';
@@ -32,18 +32,37 @@ function Form({ onAccepted, onChecked, onLocked, recordings = [] }) {
   const uncertain =
     submission?.status === 'UNKNOWN' || submission?.status === 'STARTING';
 
+  const receive = useCallback((row) => {
+    setSubmission(row);
+    setMessage(statusMessage(row));
+
+    if (row.status === 'FAILED') {
+      request.current = null;
+    } else if (row.status !== 'UNKNOWN' && row.status !== 'STARTING') {
+      if (request.current) {
+        setFormData({ text: '', voice: '' });
+      }
+
+      request.current = null;
+    }
+  }, []);
+
   useEffect(() => {
-    if (busy || !['QUEUED', 'PROCESSING'].includes(submission?.status)) {
+    if (
+      busy ||
+      !['STARTING', 'UNKNOWN', 'QUEUED', 'PROCESSING'].includes(
+        submission?.status,
+      )
+    ) {
       return;
     }
 
     const latest = recordings.find((row) => row.id === submission.id);
 
     if (latest && latest.status !== submission.status) {
-      setSubmission(latest);
-      setMessage(statusMessage(latest));
+      receive(latest);
     }
-  }, [recordings, submission, busy]);
+  }, [recordings, submission, busy, receive]);
 
   useEffect(() => {
     mounted.current = true;
@@ -86,18 +105,6 @@ function Form({ onAccepted, onChecked, onLocked, recordings = [] }) {
       mounted.current = false;
     };
   }, [onLocked]);
-
-  function receive(row) {
-    setSubmission(row);
-    setMessage(statusMessage(row));
-
-    if (row.status === 'FAILED') {
-      request.current = null;
-    } else if (row.status !== 'UNKNOWN' && row.status !== 'STARTING') {
-      request.current = null;
-      setFormData({ text: '', voice: '' });
-    }
-  }
 
   async function submit(newAttempt = false) {
     if (inFlight.current) {
