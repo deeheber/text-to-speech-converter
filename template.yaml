@@ -235,7 +235,7 @@ Resources:
                   - ${BuildCommand}
               post_build:
                 commands:
-                  - if [ $CODEBUILD_BUILD_SUCCEEDING == 0 ]; then exit 1; fi
+                  - if [ "$CODEBUILD_BUILD_SUCCEEDING" = 0 ]; then exit 1; fi
                   - cd "${!CODEBUILD_SRC_DIR}/repo"
                   - aws s3 sync '${PublishDirectory}' 's3://${DestinationBucketName}' --acl public-read --cache-control 'max-age=0, must-revalidate, public' --no-progress --delete
           - PublishDirectory: src/frontend/build
@@ -259,7 +259,7 @@ Resources:
             - SUCCEEDED
             - FAILED
             - FAULT
-            - STOPPPED
+            - STOPPED
             - TIMED_OUT
           project-name:
             - !Ref Website

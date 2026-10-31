@@ -67,6 +67,8 @@ npm ci --prefix src/CreateNewFile
 npm test --prefix src/CreateNewFile
 npm ci --prefix src/GetVoices
 npm test --prefix src/GetVoices
+npm ci --prefix src/WebsiteBuildTrigger
+npm test --prefix src/WebsiteBuildTrigger
 ```
 
 AWS calls are mocked; no AWS credentials are needed.
