@@ -80,6 +80,7 @@ Creates a new text to speech conversion
   export default apiRef;
   ```
 4. `npm start`
+5. The app prompts for the site password (see [Site password](#site-password) for how to read it). The session is kept in `localStorage` under `tts.session` until it expires or you press Lock.
 
 Vite runs on port 3000. `npm run production` reads `API_URL` and builds into `src/frontend/build`; `npm run lint` checks the frontend.
 
@@ -102,6 +103,8 @@ npm ci --prefix src/Auth
 npm test --prefix src/Auth
 npm ci --prefix test/template
 npm test --prefix test/template
+npm ci --prefix src/frontend
+npm test --prefix src/frontend
 ```
 
 AWS calls are mocked; no AWS credentials are needed.
