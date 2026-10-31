@@ -10,7 +10,7 @@ Started: 2026-10-31T17:18:59.941Z
 - [x] P0-03 Create the Auth package with the token module
 - [x] P0-04 Add the secrets cache and the token authorizer
 - [x] P0-05 Add the login handler
-- [ ] P0-06 Wire secrets, functions, authorizer and throttling into the template, with a template test
+- [x] P0-06 Wire secrets, functions, authorizer and throttling into the template, with a template test
 - [ ] P0-07 Document the password, rotation and deploy order in the README
 - [ ] P0-08 Phase 0 checkpoint: push and list manual API checks
 - [ ] P1-01 Add Vitest and the session store
@@ -44,3 +44,7 @@ Tests: 5 in src/Auth/test/authorizer.test.mjs. secrets.mjs exports getSecret, _r
 ### P0-05 — 4bb0529
 
 Tests: 8 in src/Auth/test/login.test.mjs. Interpretation: 400 body validation runs before TTL/secret checks; invalid TOKEN_TTL_HOURS -> 500 with log 'Login failed ConfigError'. Env: PASSWORD_SECRET_ARN, SIGNING_KEY_SECRET_ARN, TOKEN_TTL_HOURS (read per request).
+
+### P0-06 — 1280411
+
+Tests: 11 in test/template/template.test.mjs (yaml customTags for Ref/GetAtt/Sub/Join scalar+seq). Interpretation: env var is TOKEN_TTL_HOURS (task/PLAN) not SPEC's TOKEN_TTL_SECONDS. Template: ApiPassword, TokenSigningKey, Login, TokenAuthorizer, TokenAuthorizerInvokePermission, TokenTtlHours param (168), outputs, HttpApi Auth/throttling. sam validate --lint passes. Not deployed.
