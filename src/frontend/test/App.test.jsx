@@ -71,6 +71,15 @@ describe('App auth handling', () => {
     await waitFor(() => expect(onLocked).toHaveBeenCalledWith(EXPIRED));
   });
 
+  it('calls onLocked when GET /file fails and there is no session', async () => {
+    clearSession();
+    routes['/file'] = () => fail(new Error('Network error'));
+    const onLocked = vi.fn();
+    render(<App onLocked={onLocked} />);
+    await waitFor(() => expect(onLocked).toHaveBeenCalledWith(EXPIRED));
+    expect(console.error).not.toHaveBeenCalled();
+  });
+
   it('does not call onLocked for a network error while the session is valid', async () => {
     routes['/file'] = () => fail(new Error('Network error'));
     routes['/voices'] = () => fail(new Error('Network error'));
