@@ -1,0 +1,327 @@
+{
+  "verify": [
+    "sam validate --lint",
+    "npm run lint --prefix src/frontend",
+    "npm test --prefix src/CreateNewFile",
+    "npm test --prefix src/ListFiles",
+    "npm test --prefix src/GetVoices",
+    "npm test --prefix src/WebsiteBuildTrigger",
+    {
+      "cmd": "npm test --prefix src/DeleteFile",
+      "from": "P0-02"
+    },
+    {
+      "cmd": "npm test --prefix src/Auth",
+      "from": "P0-03"
+    },
+    {
+      "cmd": "npm ci --prefix test/template && npm test --prefix test/template",
+      "from": "P0-06"
+    },
+    {
+      "cmd": "npm test --prefix src/frontend",
+      "from": "P1-01"
+    }
+  ],
+  "extraVerify": {},
+  "build": [],
+  "baseBranch": "main",
+  "branchPrefix": "build/",
+  "maxRounds": 3,
+  "maxRoundsHard": 6,
+  "policies": {
+    "finalize": "draft"
+  },
+  "flight": "site-password",
+  "mutation": {
+    "targeted": {
+      "node": {
+        "cmd": "node --test {filter}"
+      },
+      "vitest": {
+        "cmd": "npx --prefix src/frontend vitest run --root src/frontend {filter}"
+      }
+    }
+  },
+  "constraints": [
+    {
+      "id": "no-raw-event-logging",
+      "description": "Principle 1: no console.* call receives the Lambda event variable (message/event), bare, spread, interpolated or via JSON.stringify. Log only requestContext?.requestId and routeKey. Multi-line console calls are checked by the reviewer by reading.",
+      "paths": [
+        "src/CreateNewFile/index.js",
+        "src/ListFiles/index.js",
+        "src/DeleteFile/index.js",
+        "src/GetVoices/index.js",
+        "src/Auth/"
+      ],
+      "exclude": [
+        "src/Auth/test/"
+      ],
+      "pattern": "console\\.\\w+\\((?:.*(?:[(,{]|\\$\\{))?\\s*(?:\\.\\.\\.\\s*)?(?:JSON\\.stringify\\(\\s*)?(?:message|event)\\b(?!\\s*\\??\\.)",
+      "shouldMatch": [
+        "  console.log('CreateNewFile invoked  with  message: ', message);",
+        "  console.log(JSON.stringify(message, undefined, 2));",
+        "console.log(event);",
+        "console.info('incoming', { event });",
+        "console.log(`Invalid event ${JSON.stringify(event)}`);",
+        "console.error('ctx', { ...event });",
+        "console.log('x', JSON.stringify(event));",
+        "console.log(`got ${message}`);",
+        "console.log(message, 'invoked');"
+      ],
+      "shouldNotMatch": [
+        "  console.log('ListFiles invoked', { requestId: message.requestContext?.requestId, routeKey: message.routeKey });",
+        "    console.log(`AN ERROR OCURRED: ${JSON.stringify(err.message, undefined, 2)}`);",
+        "console.log('Login invoked', event?.requestContext?.requestId, event?.routeKey);",
+        "  const id = message.pathParameters.id;",
+        "console.error('Login failed', err.name);",
+        "console.log(message.requestContext?.requestId);"
+      ],
+      "from": "P0-02"
+    },
+    {
+      "id": "no-credential-logging",
+      "description": "Principle 2: under src/Auth/, no console.* call mentions authorization, headers, body, password, token, secret or key (any case, any identifier containing them except routeKey). Log errors by err.name.",
+      "paths": [
+        "src/Auth/"
+      ],
+      "exclude": [
+        "src/Auth/test/"
+      ],
+      "pattern": "console\\.\\w+\\(.*(?:authorization|headers|body|password|token|secret|(?<!route)key)",
+      "flags": "i",
+      "shouldMatch": [
+        "console.log('headers', event.headers);",
+        "console.log(JSON.stringify(event.body));",
+        "console.error('bad password', password);",
+        "console.log('issued', token);",
+        "console.log('using', signingKey);",
+        "console.debug(event.headers?.authorization);",
+        "console.log(`fetching ${secretArn}`);",
+        "console.warn('Authorization missing');"
+      ],
+      "shouldNotMatch": [
+        "console.error('Login failed', err.name);",
+        "console.log('Authorizer invoked', event.requestContext?.requestId, event.routeKey);",
+        "const token = signToken(key, nowSec, ttlSec);",
+        "console.error('Authorizer failed', err.name);"
+      ]
+    },
+    {
+      "id": "no-credential-equality",
+      "description": "Principle 3: never compare a credential with ===, !==, == or != (passwords via SHA-256 digests and signatures via timingSafeEqual). Lines containing typeof are type checks and are skipped; .length comparisons pass. Credentials held in variables with other names are checked by the reviewer by reading.",
+      "paths": [
+        "src/Auth/"
+      ],
+      "exclude": [
+        "src/Auth/test/"
+      ],
+      "pattern": "^(?!.*\\btypeof\\b).*(?:(?:password|token|sig|secret|(?<!route)key|expected|given|digest|hmac)\\w*\\s*[!=]==?|[!=]==?\\s*[\\w.]*(?:password|token|sig|secret|(?<!route)key|expected|given|digest|hmac)\\w*\\s*(?:[;)&|,]|$))",
+      "flags": "i",
+      "shouldMatch": [
+        "  return expected === given;",
+        "  if (sig !== expectedSig) return false;",
+        "if (password === storedPassword) {",
+        "return token === otherToken;",
+        "if (signingKey !== key) throw new Error('x');",
+        "const ok = digestA === digestB;",
+        "if (body.password == secret.value) {",
+        "  return given != expected"
+      ],
+      "shouldNotMatch": [
+        "  if (parts.length !== 3) return false;",
+        "  if (version !== 'v1') return false;",
+        "  if (typeof password !== 'string' || !password) {",
+        "  if (givenBuf.length !== expectedBuf.length) return false;",
+        "  return timingSafeEqual(givenBuf, expectedBuf);",
+        "  if (event.routeKey === 'POST /login') {",
+        "  if (!Number.isSafeInteger(expiresAt) || expiresAt <= nowSec) return false;"
+      ]
+    },
+    {
+      "id": "no-secret-string-in-template",
+      "description": "Principle 4: secrets are generated (GenerateSecretString); template.yaml never carries a SecretString value.",
+      "paths": [
+        "template.yaml"
+      ],
+      "pattern": "^\\s*-?\\s*SecretString\\s*:",
+      "shouldMatch": [
+        "        SecretString: hunter2",
+        "      SecretString: !Ref SomeParameter",
+        "  - SecretString: abc"
+      ],
+      "shouldNotMatch": [
+        "        GenerateSecretString: { PasswordLength: 32, ExcludePunctuation: true }",
+        "          SecretStringTemplate: '{}'"
+      ]
+    },
+    {
+      "id": "local-storage-only-in-session",
+      "description": "Principle 5: localStorage is touched only by src/frontend/src/session.js (key tts.session).",
+      "paths": [
+        "src/frontend/src/"
+      ],
+      "exclude": [
+        "src/frontend/src/session.js"
+      ],
+      "pattern": "\\blocalStorage\\b",
+      "shouldMatch": [
+        "localStorage.setItem('x', '1');",
+        "  const raw = window.localStorage.getItem(KEY);",
+        "const store = globalThis.localStorage;"
+      ],
+      "shouldNotMatch": [
+        "import { getSession, saveSession } from '../session';",
+        "  const session = getSession();"
+      ]
+    },
+    {
+      "id": "no-session-storage-or-cookies",
+      "description": "Principle 5: no sessionStorage and no document.cookie in the frontend source.",
+      "paths": [
+        "src/frontend/src/"
+      ],
+      "pattern": "\\bsessionStorage\\b|document\\.cookie",
+      "shouldMatch": [
+        "sessionStorage.setItem('a', 'b');",
+        "document.cookie = 'a=b';",
+        "const c = window.document.cookie;"
+      ],
+      "shouldNotMatch": [
+        "const session = getSession();",
+        "clearSession();"
+      ]
+    },
+    {
+      "id": "no-frontend-credential-console",
+      "description": "Principle 6: no console output under src/frontend/src/ mentions password, token or session (any case).",
+      "paths": [
+        "src/frontend/src/"
+      ],
+      "pattern": "console\\.\\w+\\(.*(?:password|token|session)",
+      "flags": "i",
+      "shouldMatch": [
+        "console.log(password);",
+        "console.error('token', s.token);",
+        "console.log(getSession());",
+        "console.debug('Session expired');"
+      ],
+      "shouldNotMatch": [
+        "      console.error(err);",
+        "  const session = getSession();"
+      ]
+    },
+    {
+      "id": "config-import-only-in-index",
+      "description": "Principle 7: only src/frontend/src/index.jsx imports ./config (gitignored, so tests and other modules must not depend on it).",
+      "paths": [
+        "src/frontend/src/",
+        "src/frontend/test/"
+      ],
+      "exclude": [
+        "src/frontend/src/index.jsx"
+      ],
+      "pattern": "['\"](?:\\.{1,2}/)+(?:[\\w-]+/)*config(?:\\.js)?['\"]",
+      "shouldMatch": [
+        "import config from './config';",
+        "import config from '../config.js';",
+        "import config from '../src/config';",
+        "vi.mock('../src/config', () => ({ default: {} }));",
+        "const c = await import(\"./config\");"
+      ],
+      "shouldNotMatch": [
+        "import { configureAmplify } from './amplifyConfig';",
+        "import { configureAmplify } from '../src/amplifyConfig.js';",
+        "configureAmplify(config);"
+      ]
+    },
+    {
+      "id": "single-token-implementation",
+      "description": "Principle 9: HMAC signing and constant-time comparison live only in src/Auth/token.mjs.",
+      "paths": [
+        "src/",
+        "test/"
+      ],
+      "exclude": [
+        "src/Auth/token.mjs",
+        "src/Auth/test/"
+      ],
+      "pattern": "\\bcreateHmac\\b|\\btimingSafeEqual\\b",
+      "shouldMatch": [
+        "import { createHmac } from 'node:crypto';",
+        "  return crypto.timingSafeEqual(a, b);",
+        "const mac = createHmac('sha256', key).update(payload).digest();"
+      ],
+      "shouldNotMatch": [
+        "import { signToken, verifyToken } from './token.mjs';",
+        "import { createHash } from 'node:crypto';"
+      ]
+    },
+    {
+      "id": "no-jwt-libraries",
+      "description": "Non-goal: no JWT libraries; the token format is the hand-rolled v1.<expiresAt>.<sig> in src/Auth/token.mjs.",
+      "paths": [
+        "src/",
+        "test/"
+      ],
+      "pattern": "['\"](?:jsonwebtoken|jose|jwt-decode|jwks-rsa|fast-jwt)['\"]",
+      "shouldMatch": [
+        "import jwt from 'jsonwebtoken';",
+        "    \"jose\": \"^5.0.0\",",
+        "import { jwtDecode } from \"jwt-decode\";"
+      ],
+      "shouldNotMatch": [
+        "import { verifyToken } from './token.mjs';",
+        "    \"@aws-sdk/client-secrets-manager\": \"^3.1161.0\","
+      ]
+    },
+    {
+      "id": "vitest-no-globals",
+      "description": "Principle 10: frontend tests import describe/it/expect/vi from vitest, so Vitest globals stay off.",
+      "paths": [
+        "src/frontend/vite.config.js"
+      ],
+      "pattern": "globals\\s*:\\s*true",
+      "shouldMatch": [
+        "  test: { environment: 'jsdom', globals: true },",
+        "    globals:true,"
+      ],
+      "shouldNotMatch": [
+        "  test: { environment: 'jsdom' },",
+        "      globals: globals.browser,"
+      ]
+    },
+    {
+      "id": "no-build-references",
+      "description": "Principle 11: outside docs/, .kukulu/ and CLAUDE.md, no task IDs, no SPEC, PLAN.md or section-sign references, no Kukulu.",
+      "paths": [
+        "src/",
+        "test/",
+        "template.yaml",
+        "README.md",
+        ".gitignore",
+        ".prettierignore",
+        ".prettierrc"
+      ],
+      "exclude": [
+        "src/frontend/public/"
+      ],
+      "pattern": "\\bP\\d+-\\d{2}\\b|\\bSPEC\\b|PLAN\\.md|§|[Kk][uūŪU]kulu",
+      "shouldMatch": [
+        "// see P0-03 for details",
+        "// per SPEC section 5",
+        "// PLAN.md says so",
+        "// see §5",
+        "// built by Kūkulu",
+        "# kukulu flight",
+        "test('P1-04 calls onLocked', () => {});"
+      ],
+      "shouldNotMatch": [
+        "const spec = loadSpec();",
+        "// Planned behavior",
+        "const p = 'P1-2';",
+        "describe('token', () => {"
+      ]
+    }
+  ]
+}
