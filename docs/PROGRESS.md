@@ -7,7 +7,7 @@ Started: 2026-10-31T17:18:59.941Z
 
 - [x] P0-01 Stop logging raw events in CreateNewFile, ListFiles and GetVoices
 - [x] P0-02 Stop logging raw events in DeleteFile and give it a test suite
-- [ ] P0-03 Create the Auth package with the token module
+- [x] P0-03 Create the Auth package with the token module
 - [ ] P0-04 Add the secrets cache and the token authorizer
 - [ ] P0-05 Add the login handler
 - [ ] P0-06 Wire secrets, functions, authorizer and throttling into the template, with a template test
@@ -32,3 +32,7 @@ Tests: 'does not log the authorization header' added to CreateNewFile, ListFiles
 ### P0-02 — 941df04
 
 Tests: 3 added in src/DeleteFile/test/index.test.js. Added test script, aws-sdk-client-mock ^4.1.0 devDependency, .npmignore. No interpretation choices. no-build-references still fails on .gitignore ".kukulu/implement.lock" (tooling-added, pre-existing).
+
+### P0-03 — 1ced678
+
+Tests: 10 in src/Auth/test/token.test.mjs. Package auth created with @aws-sdk/client-secrets-manager and aws-sdk-client-mock installed. verifyToken compares Buffer (UTF-8 byte) lengths then timingSafeEqual on encoded strings. Exports: signToken, verifyToken, passwordMatches. No interpretation choices.
