@@ -42,7 +42,20 @@ Requires Node.js 24 and an up-to-date AWS SAM CLI.
 
 3. Open `FrontendURL` from the CloudFormation stack outputs (`https://<distribution-domain>.cloudfront.net/`).
 
+### Site password
+The site is gated by one shared password. The stack creates it as a generated secret; the secret ARNs are in the stack outputs (`ApiPasswordSecretArn` and `TokenSigningKeySecretArn`).
+
+- **Get the password:** `aws secretsmanager get-secret-value --secret-id <ApiPasswordSecretArn> --query SecretString --output text`
+- **Change the password:** `aws secretsmanager put-secret-value --secret-id <ApiPasswordSecretArn> --secret-string '<new password>'`. Existing tokens stay valid until they expire.
+- **Sign out all devices:** run `put-secret-value` on the signing key secret (`<TokenSigningKeySecretArn>`) with a new random value. This takes effect within about 10 minutes.
+- **Lock is local:** the Lock button only removes the token from this browser. It does not revoke the token.
+- **Token lifetime:** set by the `TokenTtlHours` stack parameter (default 168 hours).
+- **Deploy order:** deploy the API and frontend changes together. Deploying the API change alone breaks the deployed frontend, because it sends no token.
+
 ### Backend API Endpoints
+#### POST /login
+Public and throttled. Body `{"password": "<string>"}`; returns `{"token", "expiresAt"}`. Every other route needs the `Authorization` header set to a token from `/login`.
+
 #### GET /voices
 Populates the voices dropdown list
 
@@ -83,6 +96,12 @@ npm ci --prefix src/GetVoices
 npm test --prefix src/GetVoices
 npm ci --prefix src/WebsiteBuildTrigger
 npm test --prefix src/WebsiteBuildTrigger
+npm ci --prefix src/DeleteFile
+npm test --prefix src/DeleteFile
+npm ci --prefix src/Auth
+npm test --prefix src/Auth
+npm ci --prefix test/template
+npm test --prefix test/template
 ```
 
 AWS calls are mocked; no AWS credentials are needed.
