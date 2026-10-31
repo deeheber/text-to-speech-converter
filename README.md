@@ -24,6 +24,8 @@ My deployed version [here](http://text-to-speech-frontend.s3-website-us-west-2.a
 
 
 ### Directions To Run
+Requires Node.js 24 and an up-to-date AWS SAM CLI.
+
 1. Clone this repo (note: this script is designed to work with public Github repos, it might possibly also work with public Bitbucket and public Gitlab repos, but it hasn't been tested)
 2. Deploy the stack via the AWS SAM CLI. Getting started directions [here](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-install.html). TL;DR run [`sam build`](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-cli-command-reference-sam-build.html) and [`sam deploy --guided`](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-cli-command-reference-sam-deploy.html).
 3. Navigate to the url for your frontend. It'll be in the CloudFormation stack Outputs...should be something like: `http://{your stack name}-frontend.s3-website-{your region}.amazonaws.com/`
