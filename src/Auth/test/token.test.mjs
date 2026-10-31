@@ -68,6 +68,21 @@ test('verifyToken rejects malformed input without throwing', () => {
   }
 });
 
+test('verifyToken rejects correctly signed but non-canonical tokens', () => {
+  const sign = (payload) => `${payload}.${createHmac('sha256', KEY).update(payload).digest('base64url')}`;
+  const { token, expiresAt } = signToken(KEY, NOW, 60);
+  assert.equal(verifyToken(KEY, token, NOW), true);
+  for (const bad of [
+    `${token}.extra`,
+    sign('v1.1e10'),
+    sign(`v1. ${expiresAt}`),
+    sign(`v1.+${expiresAt}`),
+    sign('v1.99999999999999999999'),
+  ]) {
+    assert.equal(verifyToken(KEY, bad, NOW), false, bad);
+  }
+});
+
 test('passwordMatches is true only for the same password', () => {
   assert.equal(passwordMatches('hunter2', 'hunter2'), true);
   assert.equal(passwordMatches('hunter2', 'hunter3'), false);
