@@ -90,6 +90,27 @@ describe('App auth handling', () => {
     expect(onLocked).not.toHaveBeenCalled();
   });
 
+  it('calls onLocked when GET /voices returns 403', async () => {
+    routes['/voices'] = () => fail(httpError(403));
+    const onLocked = vi.fn();
+    render(<App onLocked={onLocked} />);
+    await waitFor(() => expect(onLocked).toHaveBeenCalledWith(EXPIRED));
+    expect(console.error).not.toHaveBeenCalled();
+  });
+
+  it('calls onLocked when POST /file fails and there is no session', async () => {
+    api.post.mockImplementation(() => fail(new Error('Network error')));
+    const onLocked = vi.fn();
+    render(<App onLocked={onLocked} />);
+    const user = userEvent.setup();
+    await screen.findByText('hello');
+    await user.type(document.querySelector('textarea'), 'some text');
+    clearSession();
+    await user.click(screen.getByRole('button', { name: 'Submit' }));
+    await waitFor(() => expect(onLocked).toHaveBeenCalledWith(EXPIRED));
+    expect(screen.queryByText(/An error occurred/)).toBeNull();
+  });
+
   it('calls onLocked when DELETE returns 403', async () => {
     api.del.mockImplementation(() => fail(httpError(403)));
     const onLocked = vi.fn();
