@@ -45,7 +45,7 @@ Creates a new text to speech conversion
 
 ### Running the Frontend Locally against a Deployed Backend
 1. Deploy the app
-2. `cd src/frontend` && `npm install`
+2. `cd src/frontend` && `npm ci`
 3. create a new file under `src/frontend/src` and name it `config.js`. Find you ApiURL from the CloudFormation stack Outputs...should look something like `https://6wpbpyxfgf.execute-api.us-east-1.amazonaws.com`. Add the following to the file
   ```
   const apiRef =  {
@@ -55,6 +55,8 @@ Creates a new text to speech conversion
   export default apiRef;
   ```
 4. `npm start`
+
+Vite runs on port 3000. `npm run production` reads `API_URL` and builds into `src/frontend/build`; `npm run lint` checks the frontend.
 
 ### Tests
 

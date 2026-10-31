@@ -229,7 +229,7 @@ Resources:
                   - cd ${SourceDirectory}
               pre_build:
                 commands:
-                  - npm install --omit=dev
+                  - npm ci --include=dev
               build:
                 commands:
                   - ${BuildCommand}
