@@ -306,7 +306,7 @@
       "exclude": [
         "src/frontend/public/"
       ],
-      "pattern": "\\bP\\d+-\\d{2}\\b|\\bSPEC\\b|PLAN\\.md|§|[Kk][uūŪU]kulu",
+      "pattern": "\\bP\\d+-\\d{2}\\b|\\bSPEC\\b|PLAN\\.md|§|(?<!\\.)[Kk][uūŪU]kulu",
       "shouldMatch": [
         "// see P0-03 for details",
         "// per SPEC section 5",
@@ -320,7 +320,8 @@
         "const spec = loadSpec();",
         "// Planned behavior",
         "const p = 'P1-2';",
-        "describe('token', () => {"
+        "describe('token', () => {",
+        ".kukulu/implement.lock"
       ]
     }
   ]
