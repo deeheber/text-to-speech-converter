@@ -134,10 +134,10 @@ test('the authorizer invoke permission exists', () => {
   );
 });
 
-test('route settings throttle POST /login', () => {
+test('every route, including POST /login, shares the default throttle', () => {
   const props = resources.HttpApi.Properties;
   assert.deepEqual(props.DefaultRouteSettings, { ThrottlingRateLimit: 5, ThrottlingBurstLimit: 10 });
-  assert.deepEqual(props.RouteSettings['POST /login'], { ThrottlingRateLimit: 1, ThrottlingBurstLimit: 3 });
+  assert.equal(props.RouteSettings, undefined);
 });
 
 test('every HttpApi event uses ApiId Ref HttpApi', () => {

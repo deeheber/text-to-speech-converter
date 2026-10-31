@@ -5,12 +5,22 @@ const future = () => Math.floor(Date.now() / 1000) + 3600;
 
 describe('session', () => {
   beforeEach(() => {
+    clearSession();
     localStorage.clear();
   });
 
   afterEach(() => {
     vi.useRealTimers();
+    vi.restoreAllMocks();
   });
+
+  const blockStorage = () => {
+    for (const method of ['getItem', 'setItem', 'removeItem']) {
+      vi.spyOn(Storage.prototype, method).mockImplementation(() => {
+        throw new DOMException('Storage blocked', 'SecurityError');
+      });
+    }
+  };
 
   it('saves, reads and clears a session', () => {
     const expiresAt = future();
@@ -58,5 +68,20 @@ describe('session', () => {
     expect(localStorage.length).toBe(1);
     expect(localStorage.key(0)).toBe('tts.session');
     expect(localStorage.getItem('tts.session')).not.toContain('hunter2');
+  });
+
+  it('returns null instead of throwing when storage is blocked', () => {
+    blockStorage();
+    expect(getSession()).toBeNull();
+    expect(() => clearSession()).not.toThrow();
+  });
+
+  it('keeps the session in memory when storage is blocked', () => {
+    blockStorage();
+    const expiresAt = future();
+    saveSession({ token: 'abc', expiresAt });
+    expect(getSession()).toEqual({ token: 'abc', expiresAt });
+    clearSession();
+    expect(getSession()).toBeNull();
   });
 });

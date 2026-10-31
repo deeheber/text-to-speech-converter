@@ -539,10 +539,6 @@ Resources:
       DefaultRouteSettings:
         ThrottlingRateLimit: 5
         ThrottlingBurstLimit: 10
-      RouteSettings:
-        POST /login:
-          ThrottlingRateLimit: 1
-          ThrottlingBurstLimit: 3
   WebsiteBuildTrigger:
     Type: AWS::Serverless::Function
     Properties:
