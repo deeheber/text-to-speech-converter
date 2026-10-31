@@ -344,6 +344,100 @@ it('backs off polling errors and stops before issuing a request after session ex
   expect(file).toHaveBeenCalledTimes(2);
 });
 
+it('keeps navigation available during background polling but shows loading for a page change', async () => {
+  vi.useFakeTimers();
+  file.mockImplementation(() => ok({ Items: [row], nextCursor: 'page2' }));
+  render(<App onLocked={vi.fn()} />);
+  await act(async () => {});
+
+  let finishPoll;
+  let finishPage;
+
+  file.mockImplementationOnce(() => ({
+    response: new Promise((resolve) => {
+      finishPoll = resolve;
+    }),
+  }));
+  await act(async () => vi.advanceTimersByTimeAsync(10000));
+
+  expect(file).toHaveBeenCalledTimes(2);
+  expect(screen.queryByText('Loading...')).toBeNull();
+  expect(screen.getByRole('button', { name: 'Next' }).disabled).toBe(false);
+  expect(
+    screen.getByRole('button', { name: 'Refresh', exact: true }).disabled,
+  ).toBe(false);
+
+  file.mockImplementationOnce(() => ({
+    response: new Promise((resolve) => {
+      finishPage = resolve;
+    }),
+  }));
+  await act(async () =>
+    fireEvent.click(screen.getByRole('button', { name: 'Next' })),
+  );
+
+  expect(screen.getByText('Loading...')).toBeTruthy();
+  expect(screen.getByRole('button', { name: 'Next' }).disabled).toBe(true);
+
+  await act(async () =>
+    finishPage({
+      body: {
+        json: async () => ({
+          Items: [
+            { ...row, id: 'older', text: 'second page', status: 'COMPLETE' },
+          ],
+        }),
+      },
+    }),
+  );
+  await act(async () =>
+    finishPoll({
+      body: { json: async () => ({ Items: [row], nextCursor: 'page2' }) },
+    }),
+  );
+
+  expect(screen.getByText('Page 2')).toBeTruthy();
+  expect(screen.getByText('second page')).toBeTruthy();
+  expect(screen.queryByText('new recording')).toBeNull();
+});
+
+it('keeps polling for a status-confirmed submission until it appears in the index', async () => {
+  vi.useFakeTimers();
+  api.post.mockImplementation(() => ({
+    response: Promise.reject(new Error('Network error')),
+  }));
+  render(<App onLocked={vi.fn()} />);
+  await act(async () => {});
+  fireEvent.change(screen.getByLabelText('Text to convert'), {
+    target: { value: 'hello' },
+  });
+  await act(async () => fireEvent.submit(document.querySelector('form')));
+
+  const submittedId = api.post.mock.calls[0][0].options.body.requestId;
+
+  api.get.mockImplementationOnce(() => ok({ ...row, id: submittedId }));
+  await act(async () =>
+    fireEvent.click(screen.getByRole('button', { name: 'Check status' })),
+  );
+
+  expect(file).toHaveBeenCalledTimes(2);
+  expect(screen.getByText('Page 1')).toBeTruthy();
+
+  file.mockImplementation(() =>
+    ok({ Items: [{ ...row, id: submittedId, status: 'COMPLETE' }] }),
+  );
+  await act(async () => vi.advanceTimersByTimeAsync(10000));
+
+  expect(screen.getByText('new recording')).toBeTruthy();
+  expect(screen.getByRole('status').textContent).toContain(
+    'Recording complete.',
+  );
+
+  await act(async () => vi.advanceTimersByTimeAsync(20000));
+
+  expect(file).toHaveBeenCalledTimes(3);
+});
+
 it('polls until completion and updates the confirmation without clearing the next draft', async () => {
   vi.useFakeTimers();
   render(<App onLocked={vi.fn()} />);

@@ -32,7 +32,7 @@ function App({ onLocked }) {
       }
     };
 
-    async function load() {
+    async function load(foreground = false) {
       if (!subscribed || document.hidden || inFlight) {
         return;
       }
@@ -46,7 +46,10 @@ function App({ onLocked }) {
       }
 
       inFlight = true;
-      setIsLoading(true);
+
+      if (foreground) {
+        setIsLoading(true);
+      }
 
       let again = false;
 
@@ -119,7 +122,7 @@ function App({ onLocked }) {
       }
     };
 
-    void load();
+    void load(true);
     document.addEventListener('visibilitychange', visibility);
 
     return () => {
@@ -138,6 +141,10 @@ function App({ onLocked }) {
     setTarget({ cursor: null, history: [] });
   }, []);
   const checked = useCallback((row) => {
+    if (active(row)) {
+      pendingIds.current.add(row.id);
+    }
+
     setPage((current) => ({
       ...current,
       rows: current.rows.map((old) => (old.id === row.id ? row : old)),
