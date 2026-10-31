@@ -5,7 +5,7 @@ Started: 2026-10-31T17:18:59.941Z
 
 ## Tasks
 
-- [ ] P0-01 Stop logging raw events in CreateNewFile, ListFiles and GetVoices
+- [x] P0-01 Stop logging raw events in CreateNewFile, ListFiles and GetVoices
 - [ ] P0-02 Stop logging raw events in DeleteFile and give it a test suite
 - [ ] P0-03 Create the Auth package with the token module
 - [ ] P0-04 Add the secrets cache and the token authorizer
@@ -24,3 +24,7 @@ Started: 2026-10-31T17:18:59.941Z
 ## Log
 
 (one entry per task, appended by implement)
+
+### P0-01 — 30c186c
+
+Tests: 'does not log the authorization header' added to CreateNewFile, ListFiles, GetVoices. Replaced first log line with request id/route key line (code in c99a8c8). Test calls mock.restoreAll() first to replace the no-op console mock. Note: verify's no-build-references flags .gitignore ".kukulu/implement.lock" (tooling-added); logged as feedback. Lesson: log feedback AFTER task_done, since it moves HEAD.
