@@ -18,5 +18,6 @@
     "slug": "site-password",
     "dir": "docs/flights/site-password",
     "at": "2026-10-31T17:42:31.440Z"
-  }
+  },
+  "breaking": true
 }
