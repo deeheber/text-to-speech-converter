@@ -20,6 +20,18 @@
       "stage": "plan",
       "round": 0,
       "at": "2026-10-31T17:02:57.854Z"
+    },
+    {
+      "event": "end",
+      "stage": "plan",
+      "round": 0,
+      "at": "2026-10-31T17:18:51.602Z"
+    },
+    {
+      "event": "start",
+      "stage": "implement",
+      "round": 0,
+      "at": "2026-10-31T17:18:51.602Z"
     }
   ]
 }
