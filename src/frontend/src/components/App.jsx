@@ -148,9 +148,7 @@ function App({ onLocked }) {
     setTarget({ cursor: null, history: [] });
   }, []);
   const checked = useCallback((row) => {
-    if (active(row)) {
-      pendingIds.current.set(row.id, Date.now() + unlistedWaitMs);
-    }
+    pendingIds.current.set(row.id, Date.now() + unlistedWaitMs);
 
     setPage((current) => ({
       ...current,

@@ -63,7 +63,7 @@ Text is plain text, limited to 100,000 UTF-16 code units (JavaScript `text.lengt
 
 Recordings move through `STARTING`, `QUEUED`, and `PROCESSING` to `COMPLETE` or `FAILED`. `UNKNOWN` means the outcome could not be confirmed. Only `COMPLETE` has a download URL. Definite Polly rejections return a `FAILED` record with an error status; ambiguous starts return `202` with `UNKNOWN`.
 
-The browser refreshes the visible page every 10 seconds while visible jobs are active. It also waits up to two minutes for an unlisted recording after submission or an active status check; use Refresh or Next if it still has not appeared. Refresh pauses in hidden tabs and backs off to 60 seconds on errors.
+The browser refreshes the visible page every 10 seconds while visible jobs are active. It also waits up to two minutes for an unlisted recording after submission or a status check; use Refresh or Next if it still has not appeared. Refresh pauses in hidden tabs and backs off to 60 seconds on errors.
 
 The index orders by creation time, then recording ID descending for equal timestamps. It is eventually consistent; pages do not represent a frozen snapshot while records are created or deleted. Follow `nextCursor` until it is `null` and pass the cursor unchanged.
 

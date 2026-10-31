@@ -468,42 +468,47 @@ it('keeps navigation available during background polling but shows loading for a
   expect(screen.queryByText('new recording')).toBeNull();
 });
 
-it('keeps polling for a status-confirmed submission until it appears in the index', async () => {
-  vi.useFakeTimers();
-  api.post.mockImplementation(() => ({
-    response: Promise.reject(new Error('Network error')),
-  }));
-  render(<App onLocked={vi.fn()} />);
-  await act(async () => {});
-  fireEvent.change(screen.getByLabelText('Text to convert'), {
-    target: { value: 'hello' },
-  });
-  await act(async () => fireEvent.submit(document.querySelector('form')));
+it.each(['QUEUED', 'COMPLETE'])(
+  'keeps polling for an unlisted %s submission confirmed by Check status',
+  async (status) => {
+    vi.useFakeTimers();
+    api.post.mockImplementation(() => ({
+      response: Promise.reject(new Error('Network error')),
+    }));
+    render(<App onLocked={vi.fn()} />);
+    await act(async () => {});
+    fireEvent.change(screen.getByLabelText('Text to convert'), {
+      target: { value: 'hello' },
+    });
+    await act(async () => fireEvent.submit(document.querySelector('form')));
 
-  const submittedId = api.post.mock.calls[0][0].options.body.requestId;
+    const submittedId = api.post.mock.calls[0][0].options.body.requestId;
 
-  api.get.mockImplementationOnce(() => ok({ ...row, id: submittedId }));
-  await act(async () =>
-    fireEvent.click(screen.getByRole('button', { name: 'Check status' })),
-  );
+    api.get.mockImplementationOnce(() =>
+      ok({ ...row, id: submittedId, status }),
+    );
+    await act(async () =>
+      fireEvent.click(screen.getByRole('button', { name: 'Check status' })),
+    );
 
-  expect(file).toHaveBeenCalledTimes(2);
-  expect(screen.getByText('Page 1')).toBeTruthy();
+    expect(file).toHaveBeenCalledTimes(2);
+    expect(screen.getByText('Page 1')).toBeTruthy();
 
-  file.mockImplementation(() =>
-    ok({ Items: [{ ...row, id: submittedId, status: 'COMPLETE' }] }),
-  );
-  await act(async () => vi.advanceTimersByTimeAsync(10000));
+    file.mockImplementation(() =>
+      ok({ Items: [{ ...row, id: submittedId, status: 'COMPLETE' }] }),
+    );
+    await act(async () => vi.advanceTimersByTimeAsync(10000));
 
-  expect(screen.getByText('new recording')).toBeTruthy();
-  expect(screen.getByRole('status').textContent).toContain(
-    'Recording complete.',
-  );
+    expect(screen.getByText('new recording')).toBeTruthy();
+    expect(screen.getByRole('status').textContent).toContain(
+      'Recording complete.',
+    );
 
-  await act(async () => vi.advanceTimersByTimeAsync(20000));
+    await act(async () => vi.advanceTimersByTimeAsync(20000));
 
-  expect(file).toHaveBeenCalledTimes(3);
-});
+    expect(file).toHaveBeenCalledTimes(3);
+  },
+);
 
 it('caps waiting for an unlisted recording at two minutes and still allows manual refresh', async () => {
   vi.useFakeTimers();
