@@ -16,7 +16,7 @@ Started: 2026-10-31T17:18:59.941Z
 - [x] P1-01 Add Vitest and the session store
 - [x] P1-02 Add the login API client and the Amplify configuration
 - [x] P1-03 Add the password form
-- [ ] P1-04 Add the Lock button and auth-error handling to App, Form and Table
+- [x] P1-04 Add the Lock button and auth-error handling to App, Form and Table
 - [ ] P1-05 Add the password gate and render it from index.jsx
 - [ ] P1-06 Note the password prompt in the README's local-dev section
 - [ ] P1-07 Phase 1 checkpoint: push and list manual frontend checks
@@ -79,3 +79,7 @@ Tests: api.test.js (3), amplifyConfig.test.js (3). Pattern: vi.hoisted mock fn +
 ### P1-03 — a01587c
 
 Tests: 7 in PasswordForm.test.jsx. Interpretation: input cleared at submit start (before request) and stays empty after any result. Notice prop initializes the alert and is cleared on next submit. Codebase note: in vitest, mock Promise.reject lazily via mockImplementation or it raises unhandled rejection errors (exit code stays 0 but reports Errors).
+
+### P1-04 — d1e6cd9
+
+Tests: 7 in App.test.jsx. Interpretation: onLocked is in the useEffect deps of App and Form, so PasswordGate MUST pass a stable (useCallback) lock function or the initial fetches rerun. Auth-error branch returns before existing error UI; other errors unchanged. Lock button calls onLocked() with no args.
