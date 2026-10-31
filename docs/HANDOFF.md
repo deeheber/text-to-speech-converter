@@ -30,3 +30,15 @@ Phase 1 (localhost and CloudFront): wrong/right password; convert, list, downloa
 ## For the reviewer
 - `kukulu_verify` reports `no-build-references` failing on `.gitignore` line 12 (`.kukulu/implement.lock`), a line the pipeline added; it matches "Kukulu" case-insensitively. No project code triggers it; all other constraints and verify commands are green.
 - Nothing was deployed; no AWS CLI commands run.
+
+## Round 1
+
+Branch build/2026-10-31, head e0dcac3. All 21 tasks done, 0 blocked, 0 skipped (R1-01 to R1-06 done this round).
+
+- R1-01: `no-build-references` pattern now uses `(?<!\.)[Kk][uūŪU]kulu` so the `.kukulu/` path in .gitignore no longer matches; `.kukulu/implement.lock` added to shouldNotMatch. Interpretation: none.
+- R1-02: `verifyToken` test with correctly signed non-canonical tokens (extra part, `1e10`, leading space, `+`, unsafe integer).
+- R1-03: `session.js` boundary (expiresAt == now is expired, fake timers) and string expiresAt cases.
+- R1-04 to R1-06: App.test.jsx cases for the no-session branches in App (GET /file), Form (GET /voices 403, POST /file) and Table (DELETE).
+- Test-only changes except docs/kukulu.json; no source changes. Each mutant named in the tasks was applied by hand and made the relevant test file exit non-zero.
+- Manual checks: none new.
+- Codebase note: Auth tests print "Authorizer invoked undefined undefined" lines (stray console output in authorizer, not touched this round).
