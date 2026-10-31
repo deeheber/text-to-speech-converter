@@ -2,3 +2,13 @@
   margin: 2%;
   font-family: 'helvetica';
 }
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.header button {
+  cursor: pointer;
+}

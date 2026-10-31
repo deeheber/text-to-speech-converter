@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import util from 'node:util';
 import { afterEach, beforeEach, mock, test } from 'node:test';
 import { DynamoDBDocumentClient, ScanCommand } from '@aws-sdk/lib-dynamodb';
 import { mockClient } from 'aws-sdk-client-mock';
@@ -37,4 +38,23 @@ test('preserves empty lists and scan error responses', async () => {
   const response = await handler({});
   assert.equal(response.statusCode, 503);
   assert.equal(JSON.parse(response.body), 'scan unavailable');
+});
+
+test('does not log the authorization header', async () => {
+  mock.restoreAll();
+  const lines = [];
+  for (const m of ['log', 'info', 'warn', 'error', 'debug']) {
+    mock.method(console, m, (...args) => {
+      lines.push(args.map((a) => (typeof a === 'string' ? a : util.inspect(a, { depth: null }))).join(' '));
+    });
+  }
+  database.on(ScanCommand).resolves({ Items: [] });
+  await handler({
+    headers: { authorization: 'SECRET-TOKEN-123' },
+    requestContext: { requestId: 'req-1' },
+    routeKey: 'GET /x',
+   
+  });
+  assert.ok(lines.some((l) => l.includes('req-1')));
+  assert.ok(lines.every((l) => !l.includes('SECRET-TOKEN-123')));
 });

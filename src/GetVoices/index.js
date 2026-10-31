@@ -2,7 +2,7 @@ import { PollyClient, DescribeVoicesCommand } from '@aws-sdk/client-polly';
 
 export const handler = async (message) => {
   // Log the event argument for debugging and for use in local development.
-  console.log(JSON.stringify(message, undefined, 2));
+  console.log('GetVoices invoked', { requestId: message.requestContext?.requestId, routeKey: message.routeKey });
   let response;
   let statusCode;
 

@@ -1,0 +1,12 @@
+{
+  "name": "template-test",
+  "private": true,
+  "type": "module",
+  "version": "1.0.0",
+  "scripts": {
+    "test": "node --test"
+  },
+  "devDependencies": {
+    "yaml": "^2.9.1"
+  }
+}

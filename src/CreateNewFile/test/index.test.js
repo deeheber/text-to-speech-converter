@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { unlink } from 'node:fs/promises';
 import { Readable } from 'node:stream';
 import { finished } from 'node:stream/promises';
+import util from 'node:util';
 import { afterEach, beforeEach, mock, test } from 'node:test';
 
 import {
@@ -214,4 +215,22 @@ test('marks the record FAILED if recording the completed upload fails', async ()
     ['COMPLETE', 'FAILED'],
   );
   assert.ok(updates.every((input) => input.Key.id === createdIds[0]));
+});
+
+test('does not log the authorization header', async () => {
+  mock.restoreAll();
+  const lines = [];
+  for (const m of ['log', 'info', 'warn', 'error', 'debug']) {
+    mock.method(console, m, (...args) => {
+      lines.push(args.map((a) => (typeof a === 'string' ? a : util.inspect(a, { depth: null }))).join(' '));
+    });
+  }
+  await handler({
+    headers: { authorization: 'SECRET-TOKEN-123' },
+    requestContext: { requestId: 'req-1' },
+    routeKey: 'GET /x',
+    body: JSON.stringify({ text: 'hello', voice: 'Joanna' }),
+  });
+  assert.ok(lines.some((l) => l.includes('req-1')));
+  assert.ok(lines.every((l) => !l.includes('SECRET-TOKEN-123')));
 });
