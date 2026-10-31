@@ -21,7 +21,7 @@ Started: 2026-10-31T17:18:59.941Z
 - [x] P1-06 Note the password prompt in the README's local-dev section
 - [x] P1-07 Phase 1 checkpoint: push and list manual frontend checks
 - [x] R1-01 Stop no-build-references matching the pipeline's .kukulu/ path in .gitignore
-- [ ] R1-02 Test verifyToken's part-count, digit-only and safe-integer rejections
+- [x] R1-02 Test verifyToken's part-count, digit-only and safe-integer rejections
 - [ ] R1-03 Test session.js expiry boundary and numeric expiresAt check
 - [ ] R1-04 Test App's no-session branch on GET /file and the skipped error path
 - [ ] R1-05 Test Form's 401/403 on GET /voices and its no-session branch on POST /file
@@ -116,3 +116,7 @@ On both localhost and the CloudFront URL:
 ### R1-01 — f95380a
 
 Changed no-build-references pattern to (?<!\.)[Kk][uūŪU]kulu; added .kukulu/implement.lock to shouldNotMatch. Verify all green, constraint hits empty.
+
+### R1-02 — 81b34b6
+
+Added test with signed non-canonical tokens; manually confirmed deleting token.mjs lines 17, 20, 22 each fails the test file. Note: Auth tests print "Authorizer invoked undefined undefined" noise.
